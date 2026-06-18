@@ -1,100 +1,79 @@
 1. Stack Tecnológica
-A escolha das ferramentas foca em produtividade, segurança e forte tipagem:
+A escolha das ferramentas foca em produtividade, robustez, forte tipagem e aderência a padrões arquiteturais modernos. O projeto adota a **Clean Architecture Modular** (Vertical Slicing) e os **Princípios SOLID** como diretrizes fundamentais de design de software, com ênfase especial na **Inversão de Dependência (IoC)** para garantir o desacoplamento entre a lógica de negócio e os detalhes de infraestrutura:
 
-Core: Node.js com NestJS e TypeScript.
+* **Core do Sistema**: Node.js com TypeScript, orientado pelos princípios da Clean Architecture e SOLID.
+* **Framework Web**: NestJS, utilizado como um adaptador de infraestrutura para prover injeção de dependência (IoC container), gerenciamento de módulos e capacidades de servidor HTTP.
+* **Banco de Dados & Mapeamento Relacional**: PostgreSQL como sistema gerenciador de banco de dados relacional, integrado com o Prisma ORM, que atua na camada de infraestrutura fornecendo mapeamento e tipagem estrita para o banco.
+* **Armazenamento de Arquivos**: Camada de persistência local abstrata (utilizando APIs nativas do Node.js, como `fs` e `stream`), encapsulada sob interfaces de infraestrutura, com integração com o Multer para tratamento multipart/form-data.
+* **Segurança e Autenticação**: `@nestjs/jwt`, `@nestjs/passport` e `bcrypt` para autenticação baseada em tokens JWT e hashing criptográfico de senhas.
+* **Qualidade, Testabilidade e Documentação**: Jest para testes unitários e de integração, aproveitando a arquitetura desacoplada para execução de testes velozes sem dependência de banco de dados, e `@nestjs/swagger` para geração automatizada da especificação OpenAPI.
 
-Banco de Dados: PostgreSQL (excelente para dados relacionais e buscas complexas) gerenciado via Prisma ORM (oferece uma tipagem estrita fantástica junto com o TypeScript).
+2. Estrutura de Pastas (Clean Architecture Modular)
+A estrutura de pastas adota uma divisão modular (Vertical Slicing), em que cada módulo de negócio encapsula suas próprias regras e componentes sob a ótica da Clean Architecture. A seguir, apresenta-se a estrutura interna de um módulo representativo do domínio da aplicação:
 
-Armazenamento: Sistema de arquivos local (usando as APIs nativas do Node.js, como fs e stream) integrado com o Multer para o recebimento dos arquivos.
-
-Segurança: @nestjs/jwt, @nestjs/passport e bcrypt para autenticação e hash de senhas.
-
-Qualidade e Documentação: Jest para testes unitários e @nestjs/swagger para documentação da API.
-
-2. Estrutura de Pastas (Arquitetura Modular)
-O NestJS incentiva a separação por domínios (Feature Modules). Além disso, teremos uma pasta common para código compartilhado.
-
-Plaintext
+```plaintext
 src/
-├── common/                  # Recursos globais e reaproveitáveis
-│   ├── decorators/          # Decorators customizados (ex: @CurrentUser)
-│   ├── filters/             # Tratamento global de exceções (HttpExceptionFilter)
-│   ├── guards/              # Guards de autenticação e autorização
-│   ├── interceptors/        # Interceptors (ex: formatação padronizada de respostas)
-│   └── utils/               # Funções utilitárias (ex: gerador de hash de nomes de arquivo)
+├── common/                  # Recursos compartilhados transversais (filters, guards, decorators)
+├── config/                  # Configurações globais e inicialização de frameworks (env, prisma)
+├── modules/
+│   ├── auth/                # Módulo de autenticação e sessão de usuários
+│   ├── users/               # Módulo de gerenciamento de usuários
+│   └── documents/           # Módulo de Documentos (Vertical Slice estruturado em Clean Architecture)
+│       ├── core/            # Camada de Domínio e Casos de Uso (Agnóstica)
+│       │   ├── entities/    # Modelos e regras de negócio essenciais (ex: document.entity.ts)
+│       │   ├── interfaces/  # Contratos, Repositórios e Portas de Saída (ex: storage.interface.ts, repository.interface.ts)
+│       │   └── use-cases/   # Casos de Uso da aplicação (ex: create-document.use-case.ts, list-documents.use-case.ts)
+│       │
+│       ├── infrastructure/  # Detalhes de Implementação e Adaptadores
+│       │   ├── database/    # Persistência de dados e repositórios concretos (ex: prisma-document.repository.ts)
+│       │   ├── http/        # Controladores HTTP e DTOs (ex: documents.controller.ts, dtos/)
+│       │   └── storage/     # Implementações físicas de armazenamento (ex: local-storage.adapter.ts)
+│       │
+│       └── documents.module.ts # Módulo do NestJS responsável pela fiação (wiring) de dependências
 │
-├── config/                  # Configurações do sistema (variáveis de ambiente, setup do Prisma)
-│   ├── env.config.ts
-│   └── prisma.service.ts    # Serviço global do ORM
-│
-├── modules/                 # Os módulos de negócio da aplicação
-│   ├── auth/                # Lógica de login, tokens e validação de sessão
-│   ├── users/               # CRUD de usuários
-│   ├── documents/           # Lógica central: metadados, filtros e paginação
-│   │   ├── dto/             # Data Transfer Objects (CreateDocumentDto, etc.)
-│   │   ├── entities/        # Representação da entidade (se necessário além do Prisma)
-│   │   ├── documents.controller.ts
-│   │   ├── documents.service.ts
-│   │   └── documents.module.ts
-│   └── storage/             # Isolamento da lógica de infraestrutura (disco)
-│       ├── storage.service.ts # Lida com fs.createWriteStream, fs.createReadStream
-│       └── storage.module.ts
-│
-├── app.module.ts            # Módulo raiz que importa os demais
+├── app.module.ts            # Módulo raiz da aplicação
 └── main.ts                  # Entrypoint da aplicação (setup do Swagger, pipes globais)
+```
+
+A pasta `core/` representa o coração do módulo de negócio, contendo as entidades de domínio, as interfaces de contrato (ports) e as regras de aplicação (use-cases). Ela é estritamente agnóstica a tecnologias externas, o que significa que o código contido nela não importa ou conhece frameworks (como o NestJS), ORMs (como o Prisma) ou bibliotecas de terceiros para persistência de dados. Essa independência garante que as regras de negócio permaneçam puras, testáveis e imunes a mudanças tecnológicas nas camadas mais externas.
+
 3. Boas Práticas Adotadas
 Para garantir que o código seja limpo e profissional, o desenvolvimento deve seguir estas diretrizes:
 
-Injeção de Dependência: O controlador do módulo de documentos nunca deve instanciar o serviço de storage diretamente. Tudo deve ser injetado via construtor para facilitar a testabilidade.
-
-Isolamento de Infraestrutura: O DocumentsService não deve saber como o arquivo é salvo no disco. Ele apenas chama o StorageService. Se no futuro você quiser migrar do disco local para um bucket AWS S3, você altera apenas o StorageModule.
-
-Validação Estrita na Entrada (DTOs): O uso de class-validator e class-transformer nos DTOs garante que requisições malformadas sejam barradas antes mesmo de chegarem ao controlador.
-
-Tratamento Centralizado de Erros: Um Exception Filter global para capturar erros do Prisma (como violação de chave única) e transformá-los em respostas HTTP amigáveis (ex: 409 Conflict ou 400 Bad Request).
-
-Documentação Contínua: Além do Swagger documentando os endpoints, registrar as decisões de arquitetura e as dificuldades superadas (como a implementação de streams de leitura) diretamente no seu Digital Garden criará um excelente material de consulta e portfólio.
+* **Inversão de Dependência via Interfaces**: Nenhum componente da camada `core/` deve depender diretamente de classes de infraestrutura. Em vez disso, os casos de uso definem interfaces abstratas (Portas de Saída/Repositories) e a infraestrutura implementa essas interfaces (Adaptadores). A injeção das implementações concretas é realizada pelo contêiner de IoC do NestJS, permitindo a substituição transparente das tecnologias de persistência ou armazenamento sem afetar a lógica de negócio.
+* **Princípio da Responsabilidade Única (SRP) nos Casos de Uso**: Em substituição ao padrão tradicional de serviços gigantescos que acumulam dezenas de métodos e responsabilidades (`DocumentsService`), cada fluxo ou regra de negócio é modelado como um Caso de Uso isolado (ex: `CreateDocumentUseCase`, `StreamDocumentUseCase`). Isso simplifica a leitura do código, evita o acoplamento indesejado e reduz o escopo de manutenção.
+* **Testabilidade Isolada do Core com Mocks**: Graças ao desacoplamento promovido pela Clean Architecture, a lógica contida em `core/` pode ser testada de forma 100% isolada e veloz através de testes unitários. A simulação de bancos de dados ou sistemas de arquivos é realizada instanciando mocks simples das interfaces contratuais, eliminando a necessidade de conectar a bancos reais ou subir servidores HTTP durante os testes de domínio.
+* **Validação de Entrada Desacoplada**: A validação sintática das requisições é realizada na camada HTTP de infraestrutura através de DTOs mapeados com `class-validator` e `class-transformer`, assegurando que apenas dados íntegros atinjam a camada de aplicação.
+* **Tratamento de Exceções em Camadas**: Os erros de domínio originados no `core/` são propagados por meio de exceções de domínio tipadas. Os Exception Filters globais da camada HTTP capturam e traduzem essas exceções de domínio ou erros de infraestrutura (como falhas no Prisma) em respostas padronizadas e semânticas do protocolo HTTP.
 
 4. Etapas de Desenvolvimento (Roadmap)
-Dividir o projeto em pequenos épicos facilita a visualização do progresso:
+Dividir o projeto em pequenos épicos facilita a visualização do progresso, respeitando o fluxo de dependências de dentro para fora:
 
-Etapa 1: Fundação
-Inicializar o projeto NestJS.
+#### Etapa 1: Fundação & Setup
+* Inicializar o projeto NestJS e configurar o ambiente de desenvolvimento TypeScript.
+* Configurar o Docker contendo a instância do PostgreSQL.
+* Configurar o Prisma ORM e modelar a estrutura inicial de tabelas (Users, Documents e Tags).
+* Configurar os pipes de validação globais no entrypoint da API.
 
-Configurar Docker com um container do PostgreSQL.
+#### Etapa 2: Núcleo do Domínio (Domain Core)
+* Desenvolver as Entidades de Domínio para representar os modelos de negócio com suas respectivas validações lógicas e invariants.
+* Definir as Interfaces e Contratos (Ports) de persistência de dados (`IDocumentRepository`) e de armazenamento de arquivos (`IStorageAdapter`).
+* Desenvolver os Casos de Uso (`Use Cases`) contendo as regras de negócio de criação, listagem, remoção e streaming de documentos de forma agnóstica.
+* Implementar a cobertura de testes unitários do `core/` usando mocks das interfaces de infraestrutura.
 
-Configurar o Prisma ORM, criar o schema inicial (Usuários, Documentos e Tags) e rodar a primeira migração.
+#### Etapa 3: Adaptadores de Infraestrutura (Persistence & Storage)
+* Implementar a persistência de banco de dados (`PrismaDocumentRepository`) em conformidade com as interfaces definidas no core.
+* Desenvolver o adaptador de armazenamento local de arquivos (`LocalStorageAdapter`), tratando a escrita e leitura física através de streams nativas do Node.js.
+* Criar e executar as migrations necessárias no banco de dados.
 
-Configurar o ValidationPipe global.
+#### Etapa 4: Camada de Exposição HTTP (Adapters & Controllers)
+* Mapear os DTOs para entrada de dados e serialização de respostas no módulo de documentos.
+* Desenvolver os Controladores HTTP do NestJS (`DocumentsController`) mapeando os endpoints da API para dispararem os respectivos Casos de Uso.
+* Configurar o fluxo de upload usando o Multer no controlador e integrá-lo ao fluxo do caso de uso de criação de documentos.
+* Implementar a leitura e o streaming do arquivo PDF com retorno do tipo `StreamableFile` para carregamento progressivo do arquivo no navegador.
 
-Etapa 2: Infraestrutura e Armazenamento
-Criar o StorageModule.
-
-Implementar a lógica de upload de arquivos PDF usando o FileInterceptor do Multer.
-
-Garantir a validação do tipo MIME (apenas application/pdf) e limite de tamanho.
-
-Implementar a deleção física do arquivo no disco.
-
-Etapa 3: Lógica de Negócio
-Criar o DocumentsModule.
-
-Desenvolver o CRUD de metadados integrado ao Prisma.
-
-Vincular o upload do arquivo (Etapa 2) à criação do registro no banco de dados.
-
-Implementar a rota de listagem com paginação e filtro por título/autor.
-
-Etapa 4: Consumo e Streaming
-Implementar a rota de leitura do PDF.
-
-Configurar o retorno via StreamableFile no controlador, permitindo o carregamento progressivo do documento.
-
-Etapa 5: Segurança e Fechamento
-Implementar o AuthModule (Login com JWT).
-
-Proteger as rotas de criação, deleção e leitura utilizando os Guards do Nest.
-
-Configurar o Swagger para gerar a documentação interativa da API.
-
-Testes manuais finais e escrita do README.
+#### Etapa 5: Segurança, Integração & Documentação
+* Desenvolver o módulo de autenticação (`AuthModule`) com autenticação baseada em JWT.
+* Proteger as rotas REST expondo os recursos sensíveis por meio de Guards do NestJS baseados nas credenciais decodificadas.
+* Configurar o Swagger (`@nestjs/swagger`) para geração automatizada da documentação interativa OpenAPI da API.
+* Executar testes de integração ponta a ponta (E2E) e finalizar a elaboração do README de execução do projeto.

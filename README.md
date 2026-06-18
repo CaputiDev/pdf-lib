@@ -1,8 +1,8 @@
-# 📚 Local PDF Library API
+# 📚 PDF Library
 
-Uma API RESTful robusta desenvolvida para gerenciar, catalogar e ler arquivos PDF localmente, inspirada na organização de bibliotecas digitais de jogos e pautada na filosofia open-source.
+![GitHub last commit](https://img.shields.io/github/last-commit/caputidev/pdf-lib?style=for-the-badge)
 
-Este projeto foi desenvolvido como requisito de avaliação para a disciplina de **Frameworks de Backend**, parte do curso de **Sistemas para a Internet** no **IFSul - Câmpus Charqueadas**.
+Uma API RESTful desenvolvida para gerenciar, catalogar e ler arquivos PDF localmente, inspirada na organização de bibliotecas digitais de jogos e pautada na filosofia open-source. Esse projeto foi desenvolvido como parte do curso de **Sistemas para a Internet** no **IFSul - Câmpus Charqueadas**.
 
 ---
 
@@ -19,12 +19,12 @@ Este projeto foi desenvolvido como requisito de avaliação para a disciplina de
 
 ## 🛠️ Tecnologias Utilizadas
 
-A arquitetura do projeto foi construída utilizando o ecossistema Node.js, com forte foco em tipagem e boas práticas (Arquitetura Modular e Injeção de Dependências).
+A arquitetura do projeto foi construída utilizando o ecossistema Node.js sob os preceitos de **Clean Architecture Modular** e os **Princípios SOLID**. O projeto prioriza o alto desacoplamento do domínio de negócio em relação a frameworks e detalhes de implementação (como bancos de dados e sistemas de arquivos), viabilizado pela **Inversão de Dependência (IoC)**.
 
-- **Linguagem:** TypeScript
-- **Framework Core:** NestJS
-- **Banco de Dados:** PostgreSQL (via Docker)
-- **ORM:** Prisma
+- **Linguagem:** [TypeScript](https://www.typescriptlang.org/)
+- **Framework Core:** [NestJS](https://nestjs.com/) (utilizado estritamente na camada de infraestrutura)
+- **Banco de Dados:** [PostgreSQL](https://www.postgresql.org/) (via Docker)
+- **ORM:** [Prisma](https://www.prisma.io/)
 - **Autenticação e Segurança:** Passport.js, JWT, Bcrypt
 - **Manipulação de Arquivos:** Multer
 - **Testes:** Jest
@@ -43,6 +43,103 @@ Antes de começar, você precisará ter as seguintes ferramentas instaladas em s
 ## 🚀 Como Executar o Projeto Localmente
 
 ### 1. Clonar o repositório
+
 ```bash
-git clone [https://github.com/seu-usuario/pdf-library-api.git](https://github.com/seu-usuario/pdf-library-api.git)
-cd pdf-library-api
+git clone https://github.com/caputidev/pdf-lib
+cd pdf-lib
+```
+
+### 2. Instalar as dependências
+
+```bash
+npm install
+```
+
+### 3. Configurar variáveis de ambiente
+
+Crie um arquivo `.env` na raiz do projeto e configure as variáveis de ambiente baseando-se no arquivo `.env.example`:
+
+```env
+DATABASE_URL="postgresql://admin:admin@localhost:5432/pdflibrary?schema=public"
+JWT_SECRET="sua-chave-secreta-super-segura"
+```
+
+### 4. Subir o Banco de Dados (Docker)
+
+Inicie o container do PostgreSQL mapeado no arquivo `docker-compose.yml`:
+
+```bash
+docker-compose up -d
+```
+
+### 5. Executar as Migrations do Prisma
+
+Gere a tipagem do Prisma e sincronize a estrutura do banco de dados:
+
+```bash
+npx prisma migrate dev --name init
+```
+
+### 6. Iniciar a Aplicação
+
+Execute a aplicação em modo de desenvolvimento:
+
+```bash
+npm run start:dev
+```
+
+A API estará rodando em `http://localhost:3000`.
+
+---
+
+## 📖 Documentação da API (Swagger)
+
+Com o servidor rodando, você pode acessar a documentação interativa com todos os endpoints, schemas e simulações de requisições através do link:
+
+👉 [http://localhost:3000/pdf-lib](http://localhost:3000/pdf-lib)
+
+---
+
+## 🏗️ Estrutura Arquitetural
+
+O projeto adota uma abordagem de **Clean Architecture Modular (Vertical Slicing)**. Cada fatia vertical do sistema (módulo) representa uma funcionalidade de negócios autônoma e é subdividida para isolar o núcleo das regras de negócio de agentes externos.
+
+Abaixo é apresentada a organização interna de um módulo de negócios (utilizando `documents` como exemplo):
+
+```text
+src/
+├── common/                  # Recursos globais e reaproveitáveis (decorators, guards, filters, etc.)
+├── config/                  # Configurações globais (variáveis de ambiente, setup do Prisma)
+└── modules/                 # Módulos de negócio da aplicação (Vertical Slices)
+    ├── auth/                # Módulo de autenticação
+    ├── users/               # Módulo de usuários
+    └── documents/           # Exemplo de Clean Architecture Modular
+        ├── core/            # Camada de Domínio e Aplicação (Isolada de frameworks)
+        │   ├── entities/    # Regras de negócio essenciais e modelos de dados
+        │   ├── repositories/# Interfaces/contratos de acesso a dados (Inversão de Dependência)
+        │   └── use-cases/   # Casos de uso do domínio (upload, streaming, listagem)
+        └── infrastructure/  # Camada de Detalhes de Implementação e Framework
+            ├── http/        # Controladores NestJS, interceptores e DTOs de entrada/saída
+            ├── database/    # Implementações concretas de repositórios (Prisma/PostgreSQL)
+            └── storage/     # Implementações de gravação/leitura de arquivos físicos (Multer/fs)
+```
+
+### 🧠 Princípios de Divisão de Responsabilidades
+- **Camada `core` (Domain & Application):** Contém as regras de negócio puras e os casos de uso. Esta camada é 100% isolada e "desconhece" a existência do NestJS, do banco de dados (Prisma/PostgreSQL) ou do sistema de arquivos físico. Ela se comunica com o mundo externo exclusivamente através de interfaces e inversão de controle.
+- **Camada `infrastructure` (Infrastructure & Adapter):** Lida diretamente com as tecnologias e frameworks externos. Ela implementa os repositórios definidos no `core`, provê os controladores HTTP integrados ao NestJS, realiza consultas no banco de dados e executa manipulações de arquivos reais (leitura por stream ou upload via Multer).
+
+---
+
+# 👨‍💻 Autor
+
+<table>
+  <tr>
+    <td align="center" valign="top">
+      <a href="https://github.com/caputidev">
+        <img src="https://github.com/caputidev.png" width="200px;" style="border-radius: 50%;" alt="Caputi Dev"/><br />
+        <sub><b>Caputi Dev</b></sub>
+      </a>
+    </td>
+  </tr>
+</table>
+
