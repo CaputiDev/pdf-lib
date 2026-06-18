@@ -60,7 +60,7 @@ npm install
 Crie um arquivo `.env` na raiz do projeto e configure as variáveis de ambiente baseando-se no arquivo `.env.example`:
 
 ```env
-DATABASE_URL="postgresql://admin:admin@localhost:5432/pdflibrary?schema=public"
+DATABASE_URL="postgresql://admin:admin@localhost:5433/pdflibrary?schema=public"
 JWT_SECRET="sua-chave-secreta-super-segura"
 ```
 
