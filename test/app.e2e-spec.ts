@@ -29,8 +29,8 @@ describe('AppController (e2e)', () => {
   it('/ (GET)', () => {
     return request(app.getHttpServer())
       .get('/')
-      .expect(200)
-      .expect('Hello World!');
+      .expect(302)
+      .expect('Location', '/swagger');
   });
 
   it('should register a new user, login, and access protected route', async () => {
