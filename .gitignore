@@ -54,6 +54,7 @@ tmp/
 .prettiercache
 /uploads/
 /uploads-test/
+/uploads-test/
 
 # Prisma Specifics
 /generated/prisma
