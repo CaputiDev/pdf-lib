@@ -1,6 +1,7 @@
 import { RegisterUseCase } from './register.use-case';
 import { IUserRepository } from '../../../users/core/interfaces/user.repository.interface';
 import { UserEntity } from '../../../users/core/entities/user.entity';
+import { UserAlreadyExistsException } from '../../../users/core/exceptions/user.exceptions';
 
 describe('RegisterUseCase', () => {
   let useCase: RegisterUseCase;
@@ -40,7 +41,7 @@ describe('RegisterUseCase', () => {
     mockRepository.findByEmail.mockResolvedValue(existingUser);
 
     await expect(useCase.execute(input)).rejects.toThrow(
-      'Um usuário com este e-mail já está cadastrado.',
+      UserAlreadyExistsException,
     );
   });
 });

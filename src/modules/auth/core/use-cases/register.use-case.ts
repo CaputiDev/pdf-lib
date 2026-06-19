@@ -1,5 +1,6 @@
 import { IUserRepository } from '../../../users/core/interfaces/user.repository.interface';
 import { UserEntity } from '../../../users/core/entities/user.entity';
+import { UserAlreadyExistsException } from '../../../users/core/exceptions/user.exceptions';
 import * as bcrypt from 'bcrypt';
 
 export interface RegisterInput {
@@ -14,7 +15,7 @@ export class RegisterUseCase {
   async execute(input: RegisterInput): Promise<UserEntity> {
     const existing = await this.userRepository.findByEmail(input.email);
     if (existing) {
-      throw new Error('Um usuário com este e-mail já está cadastrado.');
+      throw new UserAlreadyExistsException(input.email);
     }
 
     const hashedPassword = await bcrypt.hash(input.password, 10);

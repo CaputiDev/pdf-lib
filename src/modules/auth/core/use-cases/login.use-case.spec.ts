@@ -1,6 +1,7 @@
 import { LoginUseCase } from './login.use-case';
 import { IUserRepository } from '../../../users/core/interfaces/user.repository.interface';
 import { UserEntity } from '../../../users/core/entities/user.entity';
+import { InvalidCredentialsException } from '../../../users/core/exceptions/user.exceptions';
 import * as bcrypt from 'bcrypt';
 
 describe('LoginUseCase', () => {
@@ -40,7 +41,7 @@ describe('LoginUseCase', () => {
     mockRepository.findByEmail.mockResolvedValue(null);
 
     await expect(useCase.execute({ email, password })).rejects.toThrow(
-      'E-mail ou senha inválidos.',
+      InvalidCredentialsException,
     );
   });
 
@@ -56,7 +57,7 @@ describe('LoginUseCase', () => {
     mockRepository.findByEmail.mockResolvedValue(mockUser);
 
     await expect(useCase.execute({ email, password })).rejects.toThrow(
-      'E-mail ou senha inválidos.',
+      InvalidCredentialsException,
     );
   });
 });

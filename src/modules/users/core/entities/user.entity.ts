@@ -1,4 +1,5 @@
 import * as crypto from 'crypto';
+import { InvalidUserException } from '../exceptions/user.exceptions';
 
 export class UserEntity {
   readonly id: string;
@@ -29,13 +30,13 @@ export class UserEntity {
     createdAt?: Date;
   }): UserEntity {
     if (!properties.email || !properties.email.includes('@')) {
-      throw new Error('O e-mail informado é inválido ou está vazio.');
+      throw new InvalidUserException('O e-mail informado é inválido ou está vazio.');
     }
     if (!properties.password || properties.password.trim() === '') {
-      throw new Error('A senha do usuário não pode ser vazia.');
+      throw new InvalidUserException('A senha do usuário não pode ser vazia.');
     }
     if (!properties.name || properties.name.trim() === '') {
-      throw new Error('O nome do usuário não pode ser vazio.');
+      throw new InvalidUserException('O nome do usuário não pode ser vazio.');
     }
 
     return new UserEntity({
