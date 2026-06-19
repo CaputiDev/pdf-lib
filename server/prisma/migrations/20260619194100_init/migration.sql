@@ -41,20 +41,54 @@ CREATE TABLE "_DocumentToTag" (
     CONSTRAINT "_DocumentToTag_AB_pkey" PRIMARY KEY ("A","B")
 );
 
+-- --------------------------------------------------------
+-- Unique Indexes
+-- --------------------------------------------------------
+
 -- CreateIndex
 CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "tags_name_key" ON "tags"("name");
 
--- CreateIndex
+-- --------------------------------------------------------
+-- B-Tree Indexes — ordering and foreign key lookups
+-- --------------------------------------------------------
+
+-- Fast lookup of all documents belonging to a user
+CREATE INDEX "documents_userId_idx" ON "documents"("userId");
+
+-- Fast ordering by most-recently-uploaded
+CREATE INDEX "documents_uploadedAt_desc_idx" ON "documents"("uploadedAt" DESC);
+
+-- Fast join-table B-Tree traversal (A->B and B->A)
 CREATE INDEX "_DocumentToTag_B_index" ON "_DocumentToTag"("B");
 
--- AddForeignKey
+-- --------------------------------------------------------
+-- GIN Trigram Indexes — fast case-insensitive partial search
+-- --------------------------------------------------------
+
+-- Required extension (safe to re-run)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- Title search: supports ILIKE '%term%' without a full table scan
+CREATE INDEX "documents_title_trgm_idx" ON "documents" USING gin ("title" gin_trgm_ops);
+
+-- Author search
+CREATE INDEX "documents_author_trgm_idx" ON "documents" USING gin ("author" gin_trgm_ops);
+
+-- User name search
+CREATE INDEX "users_name_trgm_idx" ON "users" USING gin ("name" gin_trgm_ops);
+
+-- Tag name search (useful for tag filter/autocomplete queries)
+CREATE INDEX "tags_name_trgm_idx" ON "tags" USING gin ("name" gin_trgm_ops);
+
+-- --------------------------------------------------------
+-- Foreign Key Constraints
+-- --------------------------------------------------------
+
 ALTER TABLE "documents" ADD CONSTRAINT "documents_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
--- AddForeignKey
 ALTER TABLE "_DocumentToTag" ADD CONSTRAINT "_DocumentToTag_A_fkey" FOREIGN KEY ("A") REFERENCES "documents"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
--- AddForeignKey
 ALTER TABLE "_DocumentToTag" ADD CONSTRAINT "_DocumentToTag_B_fkey" FOREIGN KEY ("B") REFERENCES "tags"("id") ON DELETE CASCADE ON UPDATE CASCADE;

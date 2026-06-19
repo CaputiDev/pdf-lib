@@ -9,6 +9,24 @@ import { IStorageAdapter } from '../interfaces/storage.interface';
 import { DocumentEntity } from '../entities/document.entity';
 import { InvalidDocumentException } from '../exceptions/document.exceptions';
 
+// ---------------------------------------------------------------------------
+// Mock pdf-parse so tests never touch the filesystem or real PDF parsing.
+// The default mock returns text that produces predictable keywords:
+// "javascript" (x3), "typescript" (x2), "programming" (x1).
+// ---------------------------------------------------------------------------
+jest.mock('pdf-parse', () =>
+  jest.fn().mockResolvedValue({
+    text: 'javascript javascript javascript typescript typescript programming',
+    numpages: 1,
+    info: {},
+    metadata: null,
+    version: '1.4',
+  }),
+);
+
+// Get a typed reference to the mocked function for per-test overrides
+const pdfParseMock = jest.requireMock('pdf-parse') as jest.Mock;
+
 describe('CreateDocumentUseCase', () => {
   let useCase: CreateDocumentUseCase;
   let mockRepository: jest.Mocked<IDocumentRepository>;
@@ -29,6 +47,7 @@ describe('CreateDocumentUseCase', () => {
     };
 
     useCase = new CreateDocumentUseCase(mockRepository, mockStorage);
+    pdfParseMock.mockClear();
   });
 
   const validProps: CreateDocumentInput = {
@@ -41,7 +60,11 @@ describe('CreateDocumentUseCase', () => {
     tags: ['PDF', 'Test'],
   };
 
-  it('deve criar um documento com sucesso', async () => {
+  // ----------------------------------------------------------------
+  // Core creation behaviour
+  // ----------------------------------------------------------------
+
+  it('should create a document successfully with manual and auto-generated tags merged', async () => {
     mockStorage.save.mockResolvedValue('uploads/test-file.pdf');
     mockRepository.create.mockImplementation(async (doc) => doc);
 
@@ -55,56 +78,130 @@ describe('CreateDocumentUseCase', () => {
     expect(result).toBeInstanceOf(DocumentEntity);
     expect(result.title).toBe('Test PDF Document');
     expect(result.filePath).toBe('uploads/test-file.pdf');
-    expect(result.tags).toHaveLength(2);
-    expect(result.tags[0].name).toBe('pdf'); // normalizado para minúsculo
-    expect(result.tags[1].name).toBe('test');
+
+    // Manual tags (normalised): 'pdf', 'test'
+    // Auto tags from mock pdf-parse: 'javascript', 'typescript', 'programming'
+    const tagNames = result.tags.map((t) => t.name);
+    expect(tagNames).toContain('pdf');
+    expect(tagNames).toContain('test');
+    expect(tagNames).toContain('javascript');
+    expect(tagNames).toContain('typescript');
+    expect(tagNames).toContain('programming');
   });
 
-  it('deve criar um documento sem tags com sucesso', async () => {
+  it('should call pdf-parse with the raw (pre-encryption) file buffer', async () => {
+    mockStorage.save.mockResolvedValue('uploads/test-file.pdf');
+    mockRepository.create.mockImplementation(async (doc) => doc);
+
+    await useCase.execute(validProps);
+
+    expect(pdfParseMock).toHaveBeenCalledWith(validProps.fileBuffer);
+  });
+
+  it('should not produce duplicate tags when a manual tag matches an auto keyword', async () => {
+    // "javascript" is both a manual tag and an auto keyword from pdf-parse mock
+    pdfParseMock.mockResolvedValueOnce({
+      text: 'javascript javascript javascript typescript',
+    });
+    mockStorage.save.mockResolvedValue('uploads/test-file.pdf');
+    mockRepository.create.mockImplementation(async (doc) => doc);
+
+    const result = await useCase.execute({
+      ...validProps,
+      tags: ['javascript', 'manual'],
+    });
+
+    const tagNames = result.tags.map((t) => t.name);
+    const occurrences = tagNames.filter((n) => n === 'javascript').length;
+    expect(occurrences).toBe(1);
+  });
+
+  it('should create a document without manual tags — using only auto-generated ones', async () => {
     mockStorage.save.mockResolvedValue('uploads/test-file.pdf');
     mockRepository.create.mockImplementation(async (doc) => doc);
 
     const result = await useCase.execute({ ...validProps, tags: undefined });
 
-    expect(mockStorage.save).toHaveBeenCalledWith(
-      'test-file.pdf',
-      validProps.fileBuffer,
-    );
     expect(mockRepository.create).toHaveBeenCalled();
     expect(result).toBeInstanceOf(DocumentEntity);
+
+    const tagNames = result.tags.map((t) => t.name);
+    expect(tagNames).toContain('javascript');
+    expect(tagNames).toContain('typescript');
+    expect(tagNames).toContain('programming');
+  });
+
+  it('should produce zero tags when manual tags are empty and pdf-parse returns only stop words', async () => {
+    pdfParseMock.mockResolvedValueOnce({
+      text: 'the and for are but not',
+    });
+    mockStorage.save.mockResolvedValue('uploads/test-file.pdf');
+    mockRepository.create.mockImplementation(async (doc) => doc);
+
+    const result = await useCase.execute({ ...validProps, tags: [] });
+
     expect(result.tags).toHaveLength(0);
   });
 
-  it('deve criar um documento privado criptografando o arquivo e salvando a chave no banco', async () => {
+  it('should gracefully continue without auto-tags if pdf-parse throws (corrupted file)', async () => {
+    pdfParseMock.mockRejectedValueOnce(new Error('Corrupted PDF'));
+    mockStorage.save.mockResolvedValue('uploads/test-file.pdf');
+    mockRepository.create.mockImplementation(async (doc) => doc);
+
+    const result = await useCase.execute({ ...validProps, tags: ['manual'] });
+
+    // Only the manual tag should be present; no crash
+    expect(result.tags).toHaveLength(1);
+    expect(result.tags[0].name).toBe('manual');
+  });
+
+  // ----------------------------------------------------------------
+  // Private document / encryption
+  // ----------------------------------------------------------------
+
+  it('should create a private document, encrypt the file, and store the encryption key', async () => {
     mockStorage.save.mockResolvedValue('uploads/test-file-private.pdf');
     mockRepository.create.mockImplementation(async (doc) => doc);
 
-    const result = await useCase.execute({
-      ...validProps,
-      isPrivate: true,
-    });
+    const result = await useCase.execute({ ...validProps, isPrivate: true });
 
     expect(mockStorage.save).toHaveBeenCalled();
     expect(result.isPrivate).toBe(true);
     expect(result.encryptionKey).toHaveLength(64);
 
-    const saveCallBuffer = mockStorage.save.mock.calls[0][1];
-    expect(saveCallBuffer).not.toEqual(validProps.fileBuffer);
+    const savedBuffer = mockStorage.save.mock.calls[0][1];
+    expect(savedBuffer).not.toEqual(validProps.fileBuffer);
 
-    const decrypted = decryptWithKey(saveCallBuffer, result.encryptionKey);
+    const decrypted = decryptWithKey(savedBuffer, result.encryptionKey);
     expect(decrypted).toEqual(validProps.fileBuffer);
   });
 
-  it('deve lançar InvalidDocumentException se o buffer de arquivo estiver vazio', async () => {
+  it('should pass the raw (unencrypted) buffer to pdf-parse even for private documents', async () => {
+    mockStorage.save.mockResolvedValue('uploads/private.pdf');
+    mockRepository.create.mockImplementation(async (doc) => doc);
+
+    await useCase.execute({ ...validProps, isPrivate: true });
+
+    // pdf-parse must receive the ORIGINAL buffer, not the encrypted one
+    expect(pdfParseMock).toHaveBeenCalledWith(validProps.fileBuffer);
+  });
+
+  // ----------------------------------------------------------------
+  // Validation errors
+  // ----------------------------------------------------------------
+
+  it('should throw InvalidDocumentException if the file buffer is empty', async () => {
     const invalidProps = { ...validProps, fileBuffer: Buffer.alloc(0) };
 
     await expect(useCase.execute(invalidProps)).rejects.toThrow(
       InvalidDocumentException,
     );
     expect(mockStorage.save).not.toHaveBeenCalled();
+    expect(pdfParseMock).not.toHaveBeenCalled();
   });
 
-  it('deve lançar InvalidDocumentException se o título for vazio', async () => {
+  it('should throw InvalidDocumentException if the document title is empty', async () => {
+    mockStorage.save.mockResolvedValue('uploads/test-file.pdf');
     const invalidProps = { ...validProps, title: '' };
 
     await expect(useCase.execute(invalidProps)).rejects.toThrow(
@@ -112,7 +209,8 @@ describe('CreateDocumentUseCase', () => {
     );
   });
 
-  it('deve lançar InvalidDocumentException se o tamanho do arquivo for menor ou igual a zero', async () => {
+  it('should throw InvalidDocumentException if sizeBytes is zero', async () => {
+    mockStorage.save.mockResolvedValue('uploads/test-file.pdf');
     const invalidProps = { ...validProps, sizeBytes: 0 };
 
     await expect(useCase.execute(invalidProps)).rejects.toThrow(

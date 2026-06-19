@@ -37,6 +37,8 @@ model Document {
   
   tags          Tag[]
 
+  @@index([userId])
+  @@index([uploadedAt(sort: Desc)])
   @@map("documents")
 }
 

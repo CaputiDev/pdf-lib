@@ -96,10 +96,13 @@ npm run start:dev
 Ou execute a aplicação compilada em **Produção** (máxima performance e otimização):
 
 1. Compile o código TypeScript para JavaScript nativo (pasta `dist/`):
+
    ```bash
    npm run build
    ```
+
 2. Inicie o servidor Node.js em modo de produção:
+
    ```bash
    npm run start:prod
    ```

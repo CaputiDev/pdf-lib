@@ -1,3 +1,4 @@
+// pdf-parse is a CommonJS module. Using require() at call-time ensures Jest mocks work correctly.
 import { DocumentEntity } from '../entities/document.entity';
 import { TagEntity } from '../entities/tag.entity';
 import { IDocumentRepository } from '../interfaces/document.repository.interface';
@@ -7,6 +8,7 @@ import {
   generateRandomKeyHex,
   encryptWithKey,
 } from '../../../../common/utils/crypto.utils';
+import { extractKeywords } from '../../../../common/utils/keyword-extractor.utils';
 
 export interface CreateDocumentInput {
   title: string;
@@ -31,6 +33,18 @@ export class CreateDocumentUseCase {
         throw new InvalidDocumentException('The uploaded file is empty.');
       }
 
+      // 1. Extract keywords from the raw buffer BEFORE encryption
+      let autoKeywords: string[] = [];
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const parseFn = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>;
+        const parsed = await parseFn(input.fileBuffer);
+        autoKeywords = extractKeywords(parsed.text);
+      } catch {
+        // If pdf-parse fails (e.g. non-PDF or corrupted file), skip auto-tagging silently
+        autoKeywords = [];
+      }
+
       const isPrivate = input.isPrivate ?? false;
       let finalFileBuffer = input.fileBuffer;
       let encryptionKey: string | null = null;
@@ -40,18 +54,24 @@ export class CreateDocumentUseCase {
         finalFileBuffer = encryptWithKey(input.fileBuffer, encryptionKey);
       }
 
-      // 1. Salvar o arquivo físico no storage (seja criptografado ou não)
+      // 2. Save the physical file (encrypted or not)
       const filePath = await this.storageAdapter.save(
         input.fileName,
         finalFileBuffer,
       );
 
-      // 2. Mapear as strings de tags para TagEntity
-      const tagEntities = (input.tags ?? []).map((name) =>
-        TagEntity.create({ name }),
-      );
+      // 3. Merge manual tags with auto-generated keywords (deduplicate by name)
+      const manualTagNames = (input.tags ?? []).map((t) => t.trim().toLowerCase());
+      const allTagNames = [
+        ...manualTagNames,
+        ...autoKeywords.filter((kw) => !manualTagNames.includes(kw)),
+      ];
 
-      // 3. Criar a entidade de domínio do documento
+      const tagEntities = allTagNames
+        .filter((name) => name.length > 0)
+        .map((name) => TagEntity.create({ name }));
+
+      // 4. Build and persist the document entity
       const document = DocumentEntity.create({
         title: input.title,
         author: input.author,
@@ -63,7 +83,6 @@ export class CreateDocumentUseCase {
         encryptionKey,
       });
 
-      // 4. Salvar os metadados do documento no repositório
       return await this.documentRepository.create(document);
     } catch (error) {
       if (error instanceof InvalidDocumentException) {

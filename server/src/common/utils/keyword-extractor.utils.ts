@@ -1,0 +1,326 @@
+/**
+ * Extracts the top-N most frequent keywords from a raw text string.
+ *
+ * Pipeline:
+ *   1. Lowercase, NFD-normalize and strip diacritics so accented forms match the stop-word list.
+ *   2. Replace non-alphanumeric characters (Unicode-aware) with spaces and split into tokens.
+ *   3. Drop tokens shorter than MIN_WORD_LENGTH characters.
+ *   4. Drop common stop words (Portuguese, English, Spanish).
+ *   5. Count frequency and return the top N tokens.
+ *
+ * Returned tokens are safe to pass directly to `TagEntity.create()`.
+ */
+
+const MIN_WORD_LENGTH = 3;
+const TOP_N = 10;
+
+// ------------------------------------------------------------------
+// Stop-word list — Portuguese, English and Spanish
+// Covers: articles, prepositions, pronouns, conjunctions, auxiliaries,
+// adverbs, numerals, demonstratives, relatives, interrogatives, and
+// other high-frequency function/filler words with no semantic value.
+// All entries must be lowercase and WITHOUT diacritics (they are matched
+// after NFD normalisation + diacritic strip in `extractKeywords`).
+// ------------------------------------------------------------------
+const STOP_WORDS = new Set([
+
+  // PORTUGUESE
+
+  // -- Articles & contractions --
+  'o', 'a', 'os', 'as', 'um', 'uma', 'uns', 'umas',
+  'do', 'da', 'dos', 'das', 'no', 'na', 'nos', 'nas',
+  'ao', 'aos', 'aa', 'aas', 'pelo', 'pela', 'pelos', 'pelas',
+  'num', 'numa', 'nuns', 'numas', 'dum', 'duma', 'duns', 'dumas',
+  'neste', 'nesta', 'nestes', 'nestas', 'nesse', 'nessa', 'nesses', 'nessas',
+  'naquele', 'naquela', 'naqueles', 'naquelas', 'naquilo',
+
+  // -- Prepositions --
+  'de', 'em', 'com', 'por', 'para', 'sem', 'sob', 'ate', 'apos',
+  'ante', 'apos', 'entre', 'sobre', 'perante', 'conforme', 'durante',
+  'mediante', 'exceto', 'salvo', 'segundo', 'contra', 'desde', 'ate',
+  'pro', 'pra', 'pros', 'pras', 'acerca', 'atraves', 'diante',
+
+  // -- Pronouns --
+  'eu', 'tu', 'ele', 'ela', 'nos', 'vos', 'eles', 'elas',
+  'me', 'te', 'se', 'lhe', 'lhes', 'mim', 'ti', 'si',
+  'meu', 'minha', 'meus', 'minhas',
+  'teu', 'tua', 'teus', 'tuas',
+  'seu', 'sua', 'seus', 'suas',
+  'nosso', 'nossa', 'nossos', 'nossas',
+  'vosso', 'vossa', 'vossos', 'vossas',
+  'quem', 'que', 'qual', 'quais', 'cujo', 'cuja', 'cujos', 'cujas',
+  'este', 'esta', 'estes', 'estas', 'esse', 'essa', 'esses', 'essas',
+  'aquele', 'aquela', 'aqueles', 'aquelas', 'aquilo', 'isso', 'isto',
+  'nesse', 'nessa', 'deste', 'desta', 'desse', 'dessa',
+  'algo', 'alguem', 'ninguem', 'nada', 'tudo', 'cada', 'ambos', 'ambas',
+  'outro', 'outra', 'outros', 'outras', 'qualquer', 'quaisquer',
+
+  // -- Conjunctions --
+  'e', 'ou', 'mas', 'porem', 'contudo', 'todavia', 'entretanto',
+  'nem', 'pois', 'porque', 'portanto', 'logo', 'assim', 'quando',
+  'enquanto', 'embora', 'apesar', 'caso', 'senao', 'tanto', 'tao',
+  'quanto', 'como', 'onde', 'conforme', 'seja', 'quer', 'alias',
+  'tambem', 'ainda', 'apenas', 'somente', 'alem', 'exceto', 'salvo',
+
+  // -- Auxiliaries & high-frequency verbs --
+  'ser', 'estar', 'ter', 'haver', 'ir', 'vir', 'poder', 'dever', 'fazer',
+  'sou', 'sao', 'somos', 'sois', 'era', 'eram', 'eramos', 'ereis',
+  'fui', 'foi', 'fomos', 'foram', 'fora', 'foram', 'fosse', 'fossem',
+  'estou', 'esta', 'estamos', 'estao', 'estava', 'estavam', 'esteve',
+  'estiveram', 'esteja', 'estejam', 'tenho', 'tem', 'temos', 'tem',
+  'tinha', 'tinham', 'teve', 'tiveram', 'tivesse', 'tivessem',
+  'hei', 'ha', 'haveis', 'havia', 'houve', 'houveram', 'houvesse',
+  'vou', 'vai', 'vamos', 'vao', 'vim', 'veio', 'viemos', 'vieram',
+  'posso', 'pode', 'podemos', 'podem', 'podia', 'podiam', 'pude', 'puderam',
+  'devo', 'deve', 'devemos', 'devem', 'devia', 'deviam',
+  'faco', 'faz', 'fazemos', 'fazem', 'fazia', 'faziam', 'fez', 'fizeram',
+  'fico', 'fica', 'ficamos', 'ficam', 'ficou', 'ficaram',
+  'dou', 'da', 'damos', 'dao', 'deu', 'deram',
+  'sei', 'sabe', 'sabemos', 'sabem', 'sabia', 'sabiam',
+  'quero', 'quer', 'queremos', 'querem', 'queria', 'queriam',
+
+  // -- Adverbs & common fillers --
+  'nao', 'sim', 'bem', 'mal', 'muito', 'pouco', 'mais', 'menos',
+  'ja', 'ainda', 'logo', 'sempre', 'nunca', 'jamais', 'cedo', 'tarde',
+  'aqui', 'ali', 'la', 'ca', 'acolha', 'onde', 'quando', 'como',
+  'talvez', 'certamente', 'provavelmente', 'apenas', 'somente', 'so',
+  'mesmo', 'tambem', 'alias', 'enfim', 'afinal', 'alias', 'pois',
+
+  // -- Numerals (written form) --
+  'zero', 'um', 'dois', 'tres', 'quatro', 'cinco', 'seis', 'sete',
+  'oito', 'nove', 'dez', 'cem', 'mil', 'primeiro', 'segundo', 'terceiro',
+  'quarto', 'quinto', 'sexto', 'setimo', 'oitavo', 'nono', 'decimo',
+
+  // -- Determiners & quantifiers --
+  'todo', 'toda', 'todos', 'todas', 'muito', 'muita', 'muitos', 'muitas',
+  'pouco', 'pouca', 'poucos', 'poucas', 'tanto', 'tanta', 'tantos', 'tantas',
+  'bastante', 'suficiente', 'demais', 'varios', 'varias',
+
+  // -- Misc frequent filler --
+  'vez', 'vezes', 'tipo', 'lado', 'modo', 'forma', 'parte', 'ponto',
+  'tempo', 'lugar', 'fim', 'meio', 'hora', 'dia', 'ano', 'vez',
+  'isso', 'este', 'esse', 'aquele', 'sendo', 'tendo', 'feito',
+
+  // ENGLISH
+
+  // -- Articles & determiners --
+  'a', 'an', 'the', 'this', 'that', 'these', 'those',
+  'my', 'your', 'his', 'her', 'its', 'our', 'their',
+  'any', 'some', 'every', 'all', 'each', 'both', 'few', 'more',
+  'most', 'other', 'another', 'such', 'what', 'which', 'whose',
+  'no', 'neither', 'either', 'own', 'same',
+
+  // -- Pronouns --
+  'i', 'me', 'we', 'us', 'you', 'he', 'him', 'she', 'they', 'them',
+  'it', 'who', 'whom', 'which', 'that', 'what', 'whatever', 'whoever',
+  'whichever', 'one', 'ones', 'myself', 'yourself', 'himself', 'herself',
+  'itself', 'ourselves', 'themselves', 'themselves',
+
+  // -- Prepositions --
+  'in', 'on', 'at', 'by', 'to', 'of', 'from', 'for', 'with', 'without',
+  'about', 'above', 'across', 'after', 'against', 'along', 'among',
+  'around', 'before', 'behind', 'below', 'beneath', 'beside', 'between',
+  'beyond', 'but', 'down', 'during', 'except', 'inside', 'into', 'near',
+  'off', 'out', 'outside', 'over', 'past', 'since', 'through', 'throughout',
+  'till', 'under', 'until', 'unto', 'upon', 'via', 'within',
+
+  // -- Conjunctions --
+  'and', 'or', 'but', 'nor', 'for', 'yet', 'so', 'as', 'if', 'than',
+  'though', 'although', 'because', 'unless', 'until', 'while', 'when',
+  'where', 'whether', 'how', 'that', 'once', 'since', 'whereas',
+  'after', 'before', 'however', 'therefore', 'thus', 'hence', 'otherwise',
+  'moreover', 'furthermore', 'meanwhile', 'nevertheless', 'nonetheless',
+
+  // -- Auxiliaries & high-frequency verbs --
+  'is', 'am', 'are', 'was', 'were', 'be', 'been', 'being',
+  'have', 'has', 'had', 'having',
+  'do', 'does', 'did', 'doing',
+  'will', 'would', 'shall', 'should', 'may', 'might', 'must',
+  'can', 'could', 'need', 'dare', 'ought',
+  'get', 'got', 'gets', 'getting',
+  'make', 'made', 'makes', 'making',
+  'take', 'took', 'takes', 'taken', 'taking',
+  'come', 'came', 'comes', 'coming',
+  'give', 'gave', 'gives', 'given', 'giving',
+  'go', 'went', 'goes', 'gone', 'going',
+  'say', 'said', 'says', 'saying',
+  'see', 'saw', 'seen', 'seeing',
+  'know', 'knew', 'known', 'knowing',
+  'think', 'thought', 'thinks', 'thinking',
+  'look', 'looked', 'looks', 'looking',
+  'seem', 'seemed', 'seems', 'seeming',
+  'use', 'used', 'uses', 'using',
+  'find', 'found', 'finds', 'finding',
+  'call', 'called', 'calls', 'calling',
+  'keep', 'kept', 'keeps', 'keeping',
+  'let', 'lets', 'letting',
+  'put', 'puts', 'putting',
+  'set', 'sets', 'setting',
+  'turn', 'turned', 'turns', 'turning',
+  'show', 'showed', 'shown', 'shows', 'showing',
+  'feel', 'felt', 'feels', 'feeling',
+  'try', 'tried', 'tries', 'trying',
+  'leave', 'left', 'leaves', 'leaving',
+  'move', 'moved', 'moves', 'moving',
+  'follow', 'followed', 'follows', 'following',
+  'ask', 'asked', 'asks', 'asking',
+  'tell', 'told', 'tells', 'telling',
+  'want', 'wanted', 'wants', 'wanting',
+  'need', 'needed', 'needs', 'needing',
+  'mean', 'meant', 'means', 'meaning',
+  'become', 'became', 'becomes', 'becoming',
+  'start', 'started', 'starts', 'starting',
+  'help', 'helped', 'helps', 'helping',
+
+  // -- Adverbs --
+  'not', 'no', 'yes', 'now', 'then', 'here', 'there', 'very', 'too',
+  'also', 'just', 'well', 'even', 'only', 'still', 'also', 'often',
+  'again', 'never', 'always', 'already', 'soon', 'enough', 'rather',
+  'quite', 'back', 'away', 'far', 'ever', 'almost', 'else', 'indeed',
+  'instead', 'perhaps', 'maybe', 'probably', 'certainly', 'really',
+  'actually', 'generally', 'usually', 'simply', 'highly', 'mainly',
+  'early', 'late', 'long', 'ago', 'up', 'down', 'out', 'so',
+
+  // -- Numerals (written form) --
+  'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven',
+  'eight', 'nine', 'ten', 'eleven', 'twelve', 'hundred', 'thousand',
+  'first', 'second', 'third', 'fourth', 'fifth', 'last', 'next',
+
+  // -- Misc frequent filler --
+  'day', 'days', 'time', 'year', 'way', 'part', 'case', 'side', 'place',
+  'kind', 'fact', 'form', 'end', 'high', 'point', 'role', 'hand', 'life',
+  'world', 'thing', 'things', 'people', 'person', 'number', 'lot', 'lot',
+
+  // SPANISH
+
+  // -- Articles & contractions --
+  'el', 'la', 'los', 'las', 'un', 'una', 'unos', 'unas', 'al', 'del',
+
+  // -- Prepositions --
+  'de', 'en', 'a', 'por', 'para', 'con', 'sin', 'sobre', 'entre', 'hacia',
+  'hasta', 'desde', 'ante', 'bajo', 'contra', 'durante', 'mediante',
+  'segun', 'tras', 'versus', 'via', 'excepto', 'salvo', 'circa',
+
+  // -- Conjunctions --
+  'y', 'e', 'o', 'u', 'ni', 'pero', 'sino', 'aunque', 'como', 'porque',
+  'pues', 'si', 'que', 'cuando', 'mientras', 'donde', 'adonde', 'cuanto',
+  'conforme', 'segun', 'luego', 'pues', 'conque', 'mas', 'ahora',
+  'bien', 'ya', 'ora', 'sea', 'siquiera',
+
+  // -- Pronouns --
+  'yo', 'tu', 'el', 'ella', 'nosotros', 'nosotras', 'vosotros', 'vosotras',
+  'ellos', 'ellas', 'usted', 'ustedes',
+  'me', 'te', 'se', 'nos', 'os', 'le', 'les', 'lo', 'la', 'los', 'las',
+  'mi', 'mis', 'ti', 'su', 'sus', 'nuestro', 'nuestra', 'nuestros', 'nuestras',
+  'vuestro', 'vuestra', 'vuestros', 'vuestras',
+  'que', 'quien', 'quienes', 'cual', 'cuales', 'cuyo', 'cuya', 'cuyos', 'cuyas',
+  'donde', 'cuando', 'cuanto', 'cuanta', 'cuantos', 'cuantas', 'como',
+  'este', 'esta', 'estos', 'estas', 'ese', 'esa', 'esos', 'esas',
+  'aquel', 'aquella', 'aquellos', 'aquellas', 'esto', 'eso', 'aquello',
+  'algo', 'alguien', 'nadie', 'nada', 'todo', 'toda', 'todos', 'todas',
+  'otro', 'otra', 'otros', 'otras', 'cualquier', 'cualesquier',
+  'mismo', 'misma', 'mismos', 'mismas', 'ambos', 'ambas',
+
+  // -- Auxiliaries & high-frequency verbs --
+  'ser', 'estar', 'haber', 'tener', 'ir', 'venir', 'poder', 'deber', 'hacer',
+  'soy', 'eres', 'es', 'somos', 'sois', 'son',
+  'era', 'eras', 'eramos', 'erais', 'eran',
+  'fui', 'fuiste', 'fue', 'fuimos', 'fuisteis', 'fueron',
+  'sea', 'seas', 'seamos', 'seais', 'sean',
+  'estoy', 'estas', 'esta', 'estamos', 'estais', 'estan',
+  'estaba', 'estabas', 'estabamos', 'estabais', 'estaban',
+  'estuve', 'estuviste', 'estuvo', 'estuvimos', 'estuvisteis', 'estuvieron',
+  'he', 'has', 'ha', 'hemos', 'habeis', 'han',
+  'habia', 'habias', 'habiamos', 'habiais', 'habian',
+  'hube', 'hubiste', 'hubo', 'hubimos', 'hubisteis', 'hubieron',
+  'hay', 'habia', 'hubo',
+  'tengo', 'tienes', 'tiene', 'tenemos', 'teneis', 'tienen',
+  'tenia', 'tenias', 'teniamos', 'teniais', 'tenian',
+  'tuve', 'tuviste', 'tuvo', 'tuvimos', 'tuvisteis', 'tuvieron',
+  'voy', 'vas', 'va', 'vamos', 'vais', 'van',
+  'iba', 'ibas', 'ibamos', 'ibais', 'iban',
+  'fui', 'fuiste', 'fue', 'fuimos', 'fuisteis', 'fueron',
+  'vengo', 'vienes', 'viene', 'venimos', 'venis', 'vienen',
+  'puedo', 'puedes', 'puede', 'podemos', 'podeis', 'pueden',
+  'podia', 'podias', 'podiamos', 'podiais', 'podian',
+  'pude', 'pudiste', 'pudo', 'pudimos', 'pudisteis', 'pudieron',
+  'debo', 'debes', 'debe', 'debemos', 'debeis', 'deben',
+  'hago', 'haces', 'hace', 'hacemos', 'haceis', 'hacen',
+  'hacia', 'hacias', 'haciamos', 'haciais', 'hacian',
+  'hice', 'hiciste', 'hizo', 'hicimos', 'hicisteis', 'hicieron',
+  'quiero', 'quieres', 'quiere', 'queremos', 'quereis', 'quieren',
+  'queria', 'querian', 'quise', 'quisiste', 'quiso', 'quisimos', 'quisieron',
+  'digo', 'dices', 'dice', 'decimos', 'decis', 'dicen',
+  'decia', 'decian', 'dije', 'dijiste', 'dijo', 'dijimos', 'dijeron',
+  'veo', 'ves', 'vemos', 'veis', 'ven',
+  'veia', 'vi', 'viste', 'vio', 'vimos', 'visteis', 'vieron',
+  'doy', 'das', 'damos', 'dais', 'dan',
+  'daba', 'di', 'diste', 'dio', 'dimos', 'disteis', 'dieron',
+  'se', 'sabes', 'sabe', 'sabemos', 'sabeis', 'saben',
+  'sabia', 'supe', 'supiste', 'supo', 'supimos', 'supisteis', 'supieron',
+
+  // -- Adverbs --
+  'no', 'si', 'ya', 'bien', 'mal', 'mas', 'menos', 'muy', 'tan',
+  'tambien', 'tampoco', 'nunca', 'jamas', 'siempre', 'todavia', 'aun',
+  'pronto', 'luego', 'despues', 'antes', 'ahora', 'hoy', 'ayer',
+  'aqui', 'ahi', 'alli', 'alla', 'cerca', 'lejos', 'dentro', 'fuera',
+  'arriba', 'abajo', 'delante', 'detras', 'encima', 'debajo',
+  'asi', 'solo', 'solamente', 'apenas', 'incluso', 'ademas', 'sino',
+  'acaso', 'quiza', 'quizas', 'tal', 'vez', 'probablemente',
+  'realmente', 'generalmente', 'simplemente', 'principalmente',
+
+  // -- Numerals (written form) --
+  'cero', 'dos', 'tres', 'cuatro', 'cinco', 'seis', 'siete', 'ocho',
+  'nueve', 'diez', 'once', 'doce', 'cien', 'ciento', 'mil',
+  'primero', 'segunda', 'tercero', 'cuarto', 'quinto',
+  'primer', 'segundo', 'tercer',
+
+  // -- Quantifiers & determiners --
+  'mucho', 'muchos', 'mucha', 'muchas', 'poco', 'pocos', 'poca', 'pocas',
+  'tanto', 'tantos', 'tanta', 'tantas', 'bastante', 'suficiente', 'varios',
+  'varias', 'alguno', 'alguna', 'algunos', 'algunas', 'ninguno', 'ninguna',
+
+  // -- Misc frequent filler --
+  'vez', 'veces', 'tipo', 'lado', 'modo', 'forma', 'parte', 'punto',
+  'tiempo', 'lugar', 'fin', 'medio', 'hora', 'dia', 'ano', 'mundo',
+  'cosa', 'cosas', 'gente', 'persona', 'personas', 'caso', 'fin',
+
+]);
+
+/**
+ * Extracts up to `TOP_N` (10) unique keyword candidates from `text`.
+ *
+ * @param text - Raw string extracted from a PDF document.
+ * @returns Array of lowercase alphanumeric strings (no duplicates).
+ */
+export function extractKeywords(text: string): string[] {
+  if (!text || text.trim().length === 0) {
+    return [];
+  }
+
+  // 1. Lowercase + NFD-normalise + strip diacritics so "não" becomes "nao" and matches the stop-word list
+  const lower = text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+  // 2. Replace everything that is not a letter or whitespace with a space,
+  //    then split. This discards numbers, symbols, and mixed tokens like "h2o".
+  const LETTERS_ONLY = /^\p{L}+$/u;
+  const tokens = lower
+    .replace(/[^\p{L}\s]/gu, ' ')
+    .split(/\s+/)
+    .filter((t) => t.length >= MIN_WORD_LENGTH && LETTERS_ONLY.test(t) && !STOP_WORDS.has(t));
+
+  // 3. Count frequency
+  const freq = new Map<string, number>();
+  for (const token of tokens) {
+    freq.set(token, (freq.get(token) ?? 0) + 1);
+  }
+
+  // 4. Sort descending by frequency, take top N
+  return Array.from(freq.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, TOP_N)
+    .map(([word]) => word);
+}
