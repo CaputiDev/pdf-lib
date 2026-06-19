@@ -137,6 +137,7 @@ export class DocumentsController {
 
   @Get()
   @UseGuards(OptionalJwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Listar documentos com paginação e busca' })
   @ApiResponse({
     status: 200,
@@ -177,6 +178,7 @@ export class DocumentsController {
 
   @Get(':id/stream')
   @UseGuards(OptionalJwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({
     summary: 'Obter stream do arquivo PDF para leitura progressiva',
   })

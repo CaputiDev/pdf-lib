@@ -14,10 +14,16 @@ describe('JwtAuthGuard', () => {
     guard = new JwtAuthGuard(jwtService);
   });
 
-  const mockExecutionContext = (authHeader?: string): ExecutionContext => {
+  const mockExecutionContext = (
+    authHeader?: string,
+    queryToken?: string,
+  ): ExecutionContext => {
     const request = {
       headers: {
         authorization: authHeader,
+      },
+      query: {
+        token: queryToken,
       },
     };
     return {
@@ -27,7 +33,7 @@ describe('JwtAuthGuard', () => {
     } as any;
   };
 
-  it('should return true and assign user to request on valid token', async () => {
+  it('should return true and assign user to request on valid token in header', async () => {
     const payload = { id: 'user-uuid', email: 'test@example.com' };
     jwtService.verifyAsync.mockResolvedValue(payload);
 
@@ -42,14 +48,29 @@ describe('JwtAuthGuard', () => {
     expect(context.switchToHttp().getRequest()['user']).toEqual(payload);
   });
 
-  it('should throw UnauthorizedException if auth header is missing', async () => {
-    const context = mockExecutionContext(undefined);
+  it('should return true and assign user to request on valid token in query param', async () => {
+    const payload = { id: 'user-uuid', email: 'test@example.com' };
+    jwtService.verifyAsync.mockResolvedValue(payload);
+
+    const context = mockExecutionContext(undefined, 'query-token');
+    const result = await guard.canActivate(context);
+
+    expect(result).toBe(true);
+    expect(jwtService.verifyAsync).toHaveBeenCalledWith(
+      'query-token',
+      expect.any(Object),
+    );
+    expect(context.switchToHttp().getRequest()['user']).toEqual(payload);
+  });
+
+  it('should throw UnauthorizedException if auth token is missing in both header and query', async () => {
+    const context = mockExecutionContext(undefined, undefined);
     await expect(guard.canActivate(context)).rejects.toThrow(
       UnauthorizedException,
     );
   });
 
-  it('should throw UnauthorizedException if auth header does not start with Bearer', async () => {
+  it('should throw UnauthorizedException if auth header does not start with Bearer and query is empty', async () => {
     const context = mockExecutionContext('Basic credentials');
     await expect(guard.canActivate(context)).rejects.toThrow(
       UnauthorizedException,

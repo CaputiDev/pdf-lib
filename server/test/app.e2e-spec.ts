@@ -280,7 +280,7 @@ describe('AppController (e2e)', () => {
     const docId = uploadRes.body.id;
     expect(uploadRes.body.isPrivate).toBe(true);
 
-    // 4. User A (owner) streams their private document -> should return 200 and decrypted content
+    // 4. User A (owner) streams their private document via Authorization Header -> should return 200 and decrypted content
     const streamOwnerRes = await request(app.getHttpServer())
       .get(`/documents/${docId}/stream`)
       .set('Authorization', `Bearer ${tokenA}`)
@@ -288,10 +288,27 @@ describe('AppController (e2e)', () => {
 
     expect(streamOwnerRes.body.toString()).toBe(fileContent);
 
-    // 5. User B (attacker) tries to stream User A's private document -> should return 403 Forbidden
+    // 4.1 User A (owner) streams their private document via Query Parameter Token -> should return 200 and decrypted content
+    const streamOwnerQueryRes = await request(app.getHttpServer())
+      .get(`/documents/${docId}/stream?token=${tokenA}`)
+      .expect(200);
+
+    expect(streamOwnerQueryRes.body.toString()).toBe(fileContent);
+
+    // 4.2 User A (owner) streams with invalid query token -> should return 403 Forbidden (since verification fails silently in OptionalJwtAuthGuard and falls back to anonymous)
+    await request(app.getHttpServer())
+      .get(`/documents/${docId}/stream?token=invalid-token`)
+      .expect(403);
+
+    // 5. User B (attacker) tries to stream User A's private document via Authorization Header -> should return 403 Forbidden
     await request(app.getHttpServer())
       .get(`/documents/${docId}/stream`)
       .set('Authorization', `Bearer ${tokenB}`)
+      .expect(403);
+
+    // 5.1 User B (attacker) tries to stream User A's private document via Query Parameter Token -> should return 403 Forbidden
+    await request(app.getHttpServer())
+      .get(`/documents/${docId}/stream?token=${tokenB}`)
       .expect(403);
 
     // 6. Anonymous user tries to stream private document -> should return 403 Forbidden

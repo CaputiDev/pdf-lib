@@ -8,7 +8,7 @@ export class OptionalJwtAuthGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest<Request>();
-    const token = this.extractTokenFromHeader(request);
+    const token = this.extractToken(request);
     if (token) {
       try {
         const payload: unknown = await this.jwtService.verifyAsync(token, {
@@ -23,8 +23,14 @@ export class OptionalJwtAuthGuard implements CanActivate {
     return true;
   }
 
-  private extractTokenFromHeader(request: Request): string | undefined {
+  private extractToken(request: Request): string | undefined {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    return type === 'Bearer' ? token : undefined;
+    if (type === 'Bearer') {
+      return token;
+    }
+    if (request.query && typeof request.query.token === 'string') {
+      return request.query.token;
+    }
+    return undefined;
   }
 }

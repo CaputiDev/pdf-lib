@@ -54,7 +54,7 @@ export class LocalStorageAdapter implements IStorageAdapter {
     if (path.isAbsolute(filePath)) {
       return filePath;
     }
-    
+
     // If it starts with 'uploads/', resolve it using the configured uploadDir
     if (filePath.startsWith('uploads/')) {
       const relativePart = filePath.substring('uploads/'.length);
