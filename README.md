@@ -105,6 +105,38 @@ Com o servidor rodando, você pode acessar a documentação interativa com todos
 
 ---
 
+## 🧪 Como Executar os Testes
+
+O projeto possui suítes de testes automatizados para garantir a estabilidade e funcionamento correto das regras de negócio e integrações.
+
+### 1. Testes Unitários
+
+Os testes unitários validam o comportamento isolado das regras de negócio, incluindo entidades de domínio, casos de uso e filtros.
+
+```bash
+npm run test
+```
+
+### 2. Testes de Integração / E2E (Ponta a Ponta)
+
+Os testes E2E validam o fluxo completo das requisições HTTP reais, passando pelos controladores, guards de segurança JWT, pipes de validação e filtros globais.
+
+> **Importante:** Certifique-se de que o banco de dados PostgreSQL (via Docker Compose) está ativo no momento da execução.
+
+```bash
+npm run test:e2e
+```
+
+### 3. Cobertura de Código
+
+Para analisar o percentual de cobertura de testes de todo o projeto:
+
+```bash
+npm run test:cov
+```
+
+---
+
 ## 🏗️ Estrutura Arquitetural
 
 O projeto adota uma abordagem de **Clean Architecture Modular (Vertical Slicing)**. Cada fatia vertical do sistema (módulo) representa uma funcionalidade de negócios autônoma e é subdividida para isolar o núcleo das regras de negócio de agentes externos.
