@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
 import { LocalStorageAdapter } from './local-storage.adapter';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -34,8 +35,13 @@ describe('LocalStorageAdapter', () => {
 
       const result = await adapter.save(fileName, buffer);
 
-      expect(fs.promises.mkdir).toHaveBeenCalledWith(expect.any(String), { recursive: true });
-      expect(fs.promises.writeFile).toHaveBeenCalledWith(expect.any(String), buffer);
+      expect(fs.promises.mkdir).toHaveBeenCalledWith(expect.any(String), {
+        recursive: true,
+      });
+      expect(fs.promises.writeFile).toHaveBeenCalledWith(
+        expect.any(String),
+        buffer,
+      );
       expect(result).toMatch(/^uploads\/test-\d+-/);
       expect(result.endsWith('.pdf')).toBe(true);
     });
@@ -47,7 +53,9 @@ describe('LocalStorageAdapter', () => {
 
       await adapter.delete('uploads/test-file.pdf');
 
-      expect(fs.promises.unlink).toHaveBeenCalledWith(expect.stringContaining(path.join('uploads', 'test-file.pdf')));
+      expect(fs.promises.unlink).toHaveBeenCalledWith(
+        expect.stringContaining(path.join('uploads', 'test-file.pdf')),
+      );
     });
 
     it('should ignore ENOENT error', async () => {
@@ -55,7 +63,9 @@ describe('LocalStorageAdapter', () => {
       error.code = 'ENOENT';
       (fs.promises.unlink as jest.Mock).mockRejectedValue(error);
 
-      await expect(adapter.delete('uploads/non-existent.pdf')).resolves.not.toThrow();
+      await expect(
+        adapter.delete('uploads/non-existent.pdf'),
+      ).resolves.not.toThrow();
     });
 
     it('should throw other errors', async () => {
@@ -63,7 +73,9 @@ describe('LocalStorageAdapter', () => {
       error.code = 'EACCES';
       (fs.promises.unlink as jest.Mock).mockRejectedValue(error);
 
-      await expect(adapter.delete('uploads/file.pdf')).rejects.toThrow('Permission denied');
+      await expect(adapter.delete('uploads/file.pdf')).rejects.toThrow(
+        'Permission denied',
+      );
     });
   });
 
@@ -75,15 +87,21 @@ describe('LocalStorageAdapter', () => {
 
       const stream = await adapter.getStream('uploads/file.pdf');
 
-      expect(fs.existsSync).toHaveBeenCalledWith(expect.stringContaining(path.join('uploads', 'file.pdf')));
-      expect(fs.createReadStream).toHaveBeenCalledWith(expect.stringContaining(path.join('uploads', 'file.pdf')));
+      expect(fs.existsSync).toHaveBeenCalledWith(
+        expect.stringContaining(path.join('uploads', 'file.pdf')),
+      );
+      expect(fs.createReadStream).toHaveBeenCalledWith(
+        expect.stringContaining(path.join('uploads', 'file.pdf')),
+      );
       expect(stream).toBe(mockStream);
     });
 
     it('should throw error if file does not exist', async () => {
       (fs.existsSync as jest.Mock).mockReturnValue(false);
 
-      await expect(adapter.getStream('uploads/non-existent.pdf')).rejects.toThrow('File not found at path');
+      await expect(
+        adapter.getStream('uploads/non-existent.pdf'),
+      ).rejects.toThrow('File not found at path');
     });
   });
 });

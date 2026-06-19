@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-return */
 import { IsString, IsNotEmpty, IsOptional, IsArray } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
@@ -9,13 +10,18 @@ export class UpdateDocumentDto {
   @IsOptional()
   title?: string;
 
-  @ApiProperty({ description: 'Novo autor do documento', required: false, nullable: true })
+  @ApiProperty({
+    description: 'Novo autor do documento',
+    required: false,
+    nullable: true,
+  })
   @IsString()
   @IsOptional()
   author?: string;
 
   @ApiProperty({
-    description: 'Novas tags do documento (como array de strings ou lista separada por vírgula)',
+    description:
+      'Novas tags do documento (como array de strings ou lista separada por vírgula)',
     type: [String],
     required: false,
   })
@@ -30,14 +36,21 @@ export class UpdateDocumentDto {
       try {
         const parsed = JSON.parse(value);
         if (Array.isArray(parsed)) {
-          return parsed.map((tag: any) => String(tag).trim()).filter((tag) => tag !== '');
+          return parsed
+            .map((tag: any) => String(tag).trim())
+            .filter((tag) => tag !== '');
         }
       } catch {
-        return value.split(',').map((tag: string) => tag.trim()).filter((tag) => tag !== '');
+        return value
+          .split(',')
+          .map((tag: string) => tag.trim())
+          .filter((tag) => tag !== '');
       }
     }
     if (Array.isArray(value)) {
-      return value.map((tag: any) => String(tag).trim()).filter((tag) => tag !== '');
+      return value
+        .map((tag: any) => String(tag).trim())
+        .filter((tag) => tag !== '');
     }
     return value;
   })

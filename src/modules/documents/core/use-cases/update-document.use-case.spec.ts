@@ -1,4 +1,8 @@
-import { UpdateDocumentUseCase, UpdateDocumentInput } from './update-document.use-case';
+/* eslint-disable @typescript-eslint/unbound-method, @typescript-eslint/require-await */
+import {
+  UpdateDocumentUseCase,
+  UpdateDocumentInput,
+} from './update-document.use-case';
 import { DocumentEntity } from '../entities/document.entity';
 import { TagEntity } from '../entities/tag.entity';
 import { IDocumentRepository } from '../interfaces/document.repository.interface';
@@ -29,7 +33,7 @@ describe('UpdateDocumentUseCase', () => {
       create: jest.fn(),
       findAll: jest.fn(),
       delete: jest.fn(),
-    } as any;
+    };
 
     useCase = new UpdateDocumentUseCase(mockDocumentRepository);
   });
@@ -84,7 +88,9 @@ describe('UpdateDocumentUseCase', () => {
       title: 'New Title',
     };
 
-    await expect(useCase.execute(input)).rejects.toThrow(DocumentNotFoundException);
+    await expect(useCase.execute(input)).rejects.toThrow(
+      DocumentNotFoundException,
+    );
     expect(mockDocumentRepository.update).not.toHaveBeenCalled();
   });
 
@@ -97,7 +103,9 @@ describe('UpdateDocumentUseCase', () => {
       title: 'New Title',
     };
 
-    await expect(useCase.execute(input)).rejects.toThrow(UnauthorizedDocumentException);
+    await expect(useCase.execute(input)).rejects.toThrow(
+      UnauthorizedDocumentException,
+    );
     expect(mockDocumentRepository.update).not.toHaveBeenCalled();
   });
 
@@ -110,7 +118,9 @@ describe('UpdateDocumentUseCase', () => {
       title: '',
     };
 
-    await expect(useCase.execute(input)).rejects.toThrow(InvalidDocumentException);
+    await expect(useCase.execute(input)).rejects.toThrow(
+      InvalidDocumentException,
+    );
     expect(mockDocumentRepository.update).not.toHaveBeenCalled();
   });
 });

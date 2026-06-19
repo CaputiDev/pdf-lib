@@ -10,6 +10,8 @@ export class DocumentEntity {
   readonly uploadedAt: Date;
   readonly userId: string;
   readonly tags: TagEntity[];
+  readonly isPrivate: boolean;
+  readonly encryptionKey: string | null;
 
   constructor(properties: {
     id: string;
@@ -20,6 +22,8 @@ export class DocumentEntity {
     uploadedAt: Date;
     userId: string;
     tags?: TagEntity[];
+    isPrivate?: boolean;
+    encryptionKey?: string | null;
   }) {
     this.id = properties.id;
     this.title = properties.title;
@@ -29,6 +33,8 @@ export class DocumentEntity {
     this.uploadedAt = properties.uploadedAt;
     this.userId = properties.userId;
     this.tags = properties.tags ?? [];
+    this.isPrivate = properties.isPrivate ?? false;
+    this.encryptionKey = properties.encryptionKey ?? null;
   }
 
   static create(properties: {
@@ -38,6 +44,8 @@ export class DocumentEntity {
     filePath: string;
     userId: string;
     tags?: TagEntity[];
+    isPrivate?: boolean;
+    encryptionKey?: string | null;
     id?: string;
     uploadedAt?: Date;
   }): DocumentEntity {
@@ -66,6 +74,8 @@ export class DocumentEntity {
       uploadedAt: properties.uploadedAt ?? new Date(),
       userId: properties.userId,
       tags: properties.tags,
+      isPrivate: properties.isPrivate ?? false,
+      encryptionKey: properties.encryptionKey ?? null,
     });
   }
 }

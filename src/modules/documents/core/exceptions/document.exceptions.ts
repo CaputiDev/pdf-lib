@@ -13,7 +13,9 @@ export class DocumentNotFoundException extends DocumentException {
 }
 
 export class UnauthorizedDocumentException extends DocumentException {
-  constructor(message = 'Você não tem permissão para realizar esta operação neste documento.') {
+  constructor(
+    message = 'Você não tem permissão para realizar esta operação neste documento.',
+  ) {
     super(message);
   }
 }

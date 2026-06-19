@@ -18,12 +18,15 @@ export class JwtAuthGuard implements CanActivate {
       throw new UnauthorizedException('Token de autenticação não fornecido.');
     }
     try {
-      const payload = await this.jwtService.verifyAsync(token, {
+      const payload: unknown = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_SECRET,
       });
-      request['user'] = payload;
-    } catch (error) {
-      throw new UnauthorizedException('Token de autenticação inválido ou expirado.');
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      (request as any)['user'] = payload;
+    } catch {
+      throw new UnauthorizedException(
+        'Token de autenticação inválido ou expirado.',
+      );
     }
     return true;
   }

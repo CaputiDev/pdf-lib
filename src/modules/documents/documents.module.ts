@@ -15,14 +15,20 @@ import { UpdateDocumentUseCase } from './core/use-cases/update-document.use-case
     LocalStorageAdapter,
     {
       provide: CreateDocumentUseCase,
-      useFactory: (repo: PrismaDocumentRepository, storage: LocalStorageAdapter) => {
+      useFactory: (
+        repo: PrismaDocumentRepository,
+        storage: LocalStorageAdapter,
+      ) => {
         return new CreateDocumentUseCase(repo, storage);
       },
       inject: [PrismaDocumentRepository, LocalStorageAdapter],
     },
     {
       provide: DeleteDocumentUseCase,
-      useFactory: (repo: PrismaDocumentRepository, storage: LocalStorageAdapter) => {
+      useFactory: (
+        repo: PrismaDocumentRepository,
+        storage: LocalStorageAdapter,
+      ) => {
         return new DeleteDocumentUseCase(repo, storage);
       },
       inject: [PrismaDocumentRepository, LocalStorageAdapter],
@@ -36,7 +42,10 @@ import { UpdateDocumentUseCase } from './core/use-cases/update-document.use-case
     },
     {
       provide: StreamDocumentUseCase,
-      useFactory: (repo: PrismaDocumentRepository, storage: LocalStorageAdapter) => {
+      useFactory: (
+        repo: PrismaDocumentRepository,
+        storage: LocalStorageAdapter,
+      ) => {
         return new StreamDocumentUseCase(repo, storage);
       },
       inject: [PrismaDocumentRepository, LocalStorageAdapter],

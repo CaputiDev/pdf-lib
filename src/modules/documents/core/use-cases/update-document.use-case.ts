@@ -49,7 +49,7 @@ export class UpdateDocumentUseCase {
       });
 
       return await this.documentRepository.update(updatedDocument);
-    } catch (error: any) {
+    } catch (error) {
       if (
         error instanceof DocumentNotFoundException ||
         error instanceof UnauthorizedDocumentException ||
@@ -57,7 +57,11 @@ export class UpdateDocumentUseCase {
       ) {
         throw error;
       }
-      throw new InvalidDocumentException(error.message);
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Erro desconhecido ao atualizar o documento.';
+      throw new InvalidDocumentException(message);
     }
   }
 }

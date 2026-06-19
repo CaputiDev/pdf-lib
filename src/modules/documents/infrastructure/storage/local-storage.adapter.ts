@@ -9,7 +9,8 @@ export class LocalStorageAdapter implements IStorageAdapter {
   private readonly uploadDir: string;
 
   constructor() {
-    this.uploadDir = path.resolve(process.cwd(), 'uploads');
+    const folder = process.env.NODE_ENV === 'test' ? 'uploads-test' : 'uploads';
+    this.uploadDir = path.resolve(process.cwd(), folder);
   }
 
   async save(fileName: string, fileBuffer: Buffer): Promise<string> {
@@ -33,18 +34,19 @@ export class LocalStorageAdapter implements IStorageAdapter {
     try {
       await fs.promises.unlink(fullPath);
     } catch (error: any) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (error.code !== 'ENOENT') {
         throw error;
       }
     }
   }
 
-  async getStream(filePath: string): Promise<NodeJS.ReadableStream> {
+  getStream(filePath: string): Promise<NodeJS.ReadableStream> {
     const fullPath = this.getAbsolutePath(filePath);
     if (!fs.existsSync(fullPath)) {
       throw new Error(`File not found at path: ${filePath}`);
     }
-    return fs.createReadStream(fullPath);
+    return Promise.resolve(fs.createReadStream(fullPath));
   }
 
   private getAbsolutePath(filePath: string): string {

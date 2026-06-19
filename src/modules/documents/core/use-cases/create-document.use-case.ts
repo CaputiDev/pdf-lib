@@ -3,6 +3,10 @@ import { TagEntity } from '../entities/tag.entity';
 import { IDocumentRepository } from '../interfaces/document.repository.interface';
 import { IStorageAdapter } from '../interfaces/storage.interface';
 import { InvalidDocumentException } from '../exceptions/document.exceptions';
+import {
+  generateRandomKeyHex,
+  encryptWithKey,
+} from '../../../../common/utils/crypto.utils';
 
 export interface CreateDocumentInput {
   title: string;
@@ -12,6 +16,7 @@ export interface CreateDocumentInput {
   sizeBytes: number;
   userId: string;
   tags?: string[];
+  isPrivate?: boolean;
 }
 
 export class CreateDocumentUseCase {
@@ -26,8 +31,20 @@ export class CreateDocumentUseCase {
         throw new InvalidDocumentException('O arquivo enviado está vazio.');
       }
 
-      // 1. Salvar o arquivo físico no storage
-      const filePath = await this.storageAdapter.save(input.fileName, input.fileBuffer);
+      const isPrivate = input.isPrivate ?? false;
+      let finalFileBuffer = input.fileBuffer;
+      let encryptionKey: string | null = null;
+
+      if (isPrivate) {
+        encryptionKey = generateRandomKeyHex();
+        finalFileBuffer = encryptWithKey(input.fileBuffer, encryptionKey);
+      }
+
+      // 1. Salvar o arquivo físico no storage (seja criptografado ou não)
+      const filePath = await this.storageAdapter.save(
+        input.fileName,
+        finalFileBuffer,
+      );
 
       // 2. Mapear as strings de tags para TagEntity
       const tagEntities = (input.tags ?? []).map((name) =>
@@ -42,17 +59,21 @@ export class CreateDocumentUseCase {
         filePath,
         userId: input.userId,
         tags: tagEntities,
+        isPrivate,
+        encryptionKey,
       });
 
       // 4. Salvar os metadados do documento no repositório
       return await this.documentRepository.create(document);
-    } catch (error: any) {
-      if (
-        error instanceof InvalidDocumentException
-      ) {
+    } catch (error) {
+      if (error instanceof InvalidDocumentException) {
         throw error;
       }
-      throw new InvalidDocumentException(error.message);
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Erro desconhecido ao criar o documento.';
+      throw new InvalidDocumentException(message);
     }
   }
 }

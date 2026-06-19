@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { RegisterUseCase } from '../../core/use-cases/register.use-case';
@@ -42,7 +43,11 @@ describe('AuthController', () => {
     it('should register a new user successfully', async () => {
       registerUseCase.execute.mockResolvedValue(mockUser);
 
-      const dto = { email: 'test@example.com', password: 'password123', name: 'Test User' };
+      const dto = {
+        email: 'test@example.com',
+        password: 'password123',
+        name: 'Test User',
+      };
       const result = await controller.register(dto);
 
       expect(registerUseCase.execute).toHaveBeenCalledWith(dto);

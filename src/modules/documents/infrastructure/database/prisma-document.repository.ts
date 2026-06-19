@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../config/prisma/prisma.service';
-import { IDocumentRepository, FindAllFilters } from '../../core/interfaces/document.repository.interface';
+import {
+  IDocumentRepository,
+  FindAllFilters,
+} from '../../core/interfaces/document.repository.interface';
 import { DocumentEntity } from '../../core/entities/document.entity';
 import { TagEntity } from '../../core/entities/tag.entity';
 
@@ -18,6 +21,8 @@ export class PrismaDocumentRepository implements IDocumentRepository {
         filePath: document.filePath,
         uploadedAt: document.uploadedAt,
         userId: document.userId,
+        isPrivate: document.isPrivate,
+        encryptionKey: document.encryptionKey,
         tags: {
           connectOrCreate: document.tags.map((tag) => ({
             where: { name: tag.name },
@@ -38,6 +43,8 @@ export class PrismaDocumentRepository implements IDocumentRepository {
       filePath: created.filePath,
       uploadedAt: created.uploadedAt,
       userId: created.userId,
+      isPrivate: created.isPrivate,
+      encryptionKey: created.encryptionKey,
       tags: created.tags.map((t) => new TagEntity({ id: t.id, name: t.name })),
     });
   }
@@ -60,31 +67,57 @@ export class PrismaDocumentRepository implements IDocumentRepository {
       filePath: doc.filePath,
       uploadedAt: doc.uploadedAt,
       userId: doc.userId,
+      isPrivate: doc.isPrivate,
+      encryptionKey: doc.encryptionKey,
       tags: doc.tags.map((t) => new TagEntity({ id: t.id, name: t.name })),
     });
   }
 
-  async findAll(filters: FindAllFilters): Promise<{ documents: DocumentEntity[]; total: number }> {
-    const where: any = {};
+  async findAll(
+    filters: FindAllFilters,
+  ): Promise<{ documents: DocumentEntity[]; total: number }> {
+    const conditions: any[] = [];
 
+    // Privacy / Visibility condition
     if (filters.userId) {
-      where.userId = filters.userId;
+      if (filters.currentUserId && filters.userId === filters.currentUserId) {
+        conditions.push({ userId: filters.userId });
+      } else {
+        conditions.push({ userId: filters.userId });
+        conditions.push({ isPrivate: false });
+      }
+    } else {
+      if (filters.currentUserId) {
+        conditions.push({
+          OR: [{ isPrivate: false }, { userId: filters.currentUserId }],
+        });
+      } else {
+        conditions.push({ isPrivate: false });
+      }
     }
 
+    // Search condition
     if (filters.search) {
-      where.OR = [
-        { title: { contains: filters.search, mode: 'insensitive' } },
-        { author: { contains: filters.search, mode: 'insensitive' } },
-      ];
+      conditions.push({
+        OR: [
+          { title: { contains: filters.search, mode: 'insensitive' } },
+          { author: { contains: filters.search, mode: 'insensitive' } },
+        ],
+      });
     }
 
+    // Tag condition
     if (filters.tag) {
-      where.tags = {
-        some: {
-          name: { equals: filters.tag.toLowerCase() },
+      conditions.push({
+        tags: {
+          some: {
+            name: { equals: filters.tag.toLowerCase() },
+          },
         },
-      };
+      });
     }
+
+    const where = conditions.length > 0 ? { AND: conditions } : {};
 
     const [docs, total] = await this.prisma.$transaction([
       this.prisma.document.findMany({
@@ -108,7 +141,11 @@ export class PrismaDocumentRepository implements IDocumentRepository {
             filePath: doc.filePath,
             uploadedAt: doc.uploadedAt,
             userId: doc.userId,
-            tags: doc.tags.map((t) => new TagEntity({ id: t.id, name: t.name })),
+            isPrivate: doc.isPrivate,
+            encryptionKey: doc.encryptionKey,
+            tags: doc.tags.map(
+              (t) => new TagEntity({ id: t.id, name: t.name }),
+            ),
           }),
       ),
       total,
@@ -121,6 +158,8 @@ export class PrismaDocumentRepository implements IDocumentRepository {
       data: {
         title: document.title,
         author: document.author,
+        isPrivate: document.isPrivate,
+        encryptionKey: document.encryptionKey,
         tags: {
           set: [],
           connectOrCreate: document.tags.map((tag) => ({
@@ -142,6 +181,8 @@ export class PrismaDocumentRepository implements IDocumentRepository {
       filePath: updated.filePath,
       uploadedAt: updated.uploadedAt,
       userId: updated.userId,
+      isPrivate: updated.isPrivate,
+      encryptionKey: updated.encryptionKey,
       tags: updated.tags.map((t) => new TagEntity({ id: t.id, name: t.name })),
     });
   }

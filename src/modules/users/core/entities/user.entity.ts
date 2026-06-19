@@ -30,7 +30,9 @@ export class UserEntity {
     createdAt?: Date;
   }): UserEntity {
     if (!properties.email || !properties.email.includes('@')) {
-      throw new InvalidUserException('O e-mail informado é inválido ou está vazio.');
+      throw new InvalidUserException(
+        'O e-mail informado é inválido ou está vazio.',
+      );
     }
     if (!properties.password || properties.password.trim() === '') {
       throw new InvalidUserException('A senha do usuário não pode ser vazia.');

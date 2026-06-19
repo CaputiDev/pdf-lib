@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaDocumentRepository } from './prisma-document.repository';
 import { PrismaService } from '../../../../config/prisma/prisma.service';
@@ -79,6 +80,8 @@ describe('PrismaDocumentRepository', () => {
           filePath: 'uploads/file.pdf',
           uploadedAt: expect.any(Date),
           userId: 'user-id-123',
+          isPrivate: false,
+          encryptionKey: null,
           tags: {
             connectOrCreate: [
               {
@@ -128,10 +131,7 @@ describe('PrismaDocumentRepository', () => {
 
   describe('findAll', () => {
     it('should return paginated and filtered documents', async () => {
-      mockPrismaService.$transaction.mockResolvedValue([
-        [mockDbDocument],
-        1,
-      ]);
+      mockPrismaService.$transaction.mockResolvedValue([[mockDbDocument], 1]);
 
       const filters = {
         userId: 'user-id-123',
@@ -175,7 +175,9 @@ describe('PrismaDocumentRepository', () => {
         ],
       };
 
-      mockPrismaService.document.update.mockResolvedValue(mockUpdatedDbDocument);
+      mockPrismaService.document.update.mockResolvedValue(
+        mockUpdatedDbDocument,
+      );
 
       const result = await repository.update(documentEntity);
 
@@ -184,6 +186,8 @@ describe('PrismaDocumentRepository', () => {
         data: {
           title: 'New Title',
           author: 'New Author',
+          isPrivate: false,
+          encryptionKey: null,
           tags: {
             set: [],
             connectOrCreate: [

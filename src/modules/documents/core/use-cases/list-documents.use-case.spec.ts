@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/unbound-method */
 import { ListDocumentsUseCase } from './list-documents.use-case';
 import { IDocumentRepository } from '../interfaces/document.repository.interface';
 import { DocumentEntity } from '../entities/document.entity';
@@ -49,6 +50,7 @@ describe('ListDocumentsUseCase', () => {
 
     expect(mockRepository.findAll).toHaveBeenCalledWith({
       userId: 'user-1',
+      currentUserId: undefined,
       search: 'Doc',
       tag: undefined,
       skip: 0,
@@ -72,6 +74,7 @@ describe('ListDocumentsUseCase', () => {
 
     expect(mockRepository.findAll).toHaveBeenCalledWith({
       userId: undefined,
+      currentUserId: undefined,
       search: undefined,
       tag: undefined,
       skip: 0,
@@ -93,6 +96,7 @@ describe('ListDocumentsUseCase', () => {
 
     expect(mockRepository.findAll).toHaveBeenCalledWith({
       userId: undefined,
+      currentUserId: undefined,
       search: undefined,
       tag: undefined,
       skip: 10,

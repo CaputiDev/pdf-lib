@@ -27,6 +27,7 @@ import { CreateDocumentDto } from './dtos/create-document.dto';
 import { ListDocumentsQueryDto } from './dtos/list-documents-query.dto';
 import { UpdateDocumentDto } from './dtos/update-document.dto';
 import { JwtAuthGuard } from '../../../auth/infrastructure/http/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../../../auth/infrastructure/http/guards/optional-jwt-auth.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import {
   ApiTags,
@@ -36,6 +37,11 @@ import {
   ApiBody,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+
+interface AuthenticatedUser {
+  id: string;
+  email: string;
+}
 
 @ApiTags('Documents')
 @Controller('documents')
@@ -58,21 +64,42 @@ export class DocumentsController {
     schema: {
       type: 'object',
       properties: {
-        file: { type: 'string', format: 'binary', description: 'Arquivo PDF para upload' },
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Arquivo PDF para upload',
+        },
         title: { type: 'string', description: 'Título do documento' },
-        author: { type: 'string', description: 'Autor do documento (opcional)' },
-        tags: { type: 'string', description: 'Tags separadas por vírgula ou JSON array' },
+        author: {
+          type: 'string',
+          description: 'Autor do documento (opcional)',
+        },
+        tags: {
+          type: 'string',
+          description: 'Tags separadas por vírgula ou JSON array',
+        },
+        isPrivate: {
+          type: 'boolean',
+          description: 'Define se o documento é privado e será criptografado',
+          default: false,
+        },
       },
       required: ['file', 'title'],
     },
   })
   @ApiResponse({ status: 201, description: 'Documento criado com sucesso.' })
-  @ApiResponse({ status: 400, description: 'Dados de entrada ou arquivo inválidos.' })
-  @ApiResponse({ status: 401, description: 'Token de autenticação não fornecido ou inválido.' })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados de entrada ou arquivo inválidos.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Token de autenticação não fornecido ou inválido.',
+  })
   async create(
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: CreateDocumentDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     if (!user || !user.id) {
       throw new BadRequestException('Usuário não autenticado.');
@@ -92,6 +119,7 @@ export class DocumentsController {
       sizeBytes: file.size,
       userId: user.id,
       tags: dto.tags,
+      isPrivate: dto.isPrivate,
     });
 
     return {
@@ -102,19 +130,26 @@ export class DocumentsController {
       filePath: document.filePath,
       uploadedAt: document.uploadedAt,
       userId: document.userId,
+      isPrivate: document.isPrivate,
       tags: document.tags.map((t) => t.name),
     };
   }
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Listar documentos com paginação e busca' })
-  @ApiResponse({ status: 200, description: 'Lista de documentos e metadados de paginação.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de documentos e metadados de paginação.',
+  })
   async findAll(
     @Query() query: ListDocumentsQueryDto,
     @Headers('x-user-id') userId?: string,
+    @CurrentUser() user?: AuthenticatedUser,
   ) {
     const result = await this.listDocumentsUseCase.execute({
       userId,
+      currentUserId: user?.id || userId,
       search: query.search,
       tag: query.tag,
       page: query.page,
@@ -130,6 +165,7 @@ export class DocumentsController {
         filePath: doc.filePath,
         uploadedAt: doc.uploadedAt,
         userId: doc.userId,
+        isPrivate: doc.isPrivate,
         tags: doc.tags.map((t) => t.name),
       })),
       total: result.total,
@@ -140,14 +176,21 @@ export class DocumentsController {
   }
 
   @Get(':id/stream')
-  @ApiOperation({ summary: 'Obter stream do arquivo PDF para leitura progressiva' })
+  @UseGuards(OptionalJwtAuthGuard)
+  @ApiOperation({
+    summary: 'Obter stream do arquivo PDF para leitura progressiva',
+  })
   @ApiResponse({ status: 200, description: 'Stream do arquivo PDF.' })
   @ApiResponse({ status: 404, description: 'Documento não encontrado.' })
   async stream(
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
+    @CurrentUser() user?: AuthenticatedUser,
   ) {
-    const { stream, document } = await this.streamDocumentUseCase.execute(id);
+    const { stream, document } = await this.streamDocumentUseCase.execute({
+      id,
+      currentUserId: user?.id,
+    });
 
     res.set({
       'Content-Type': 'application/pdf',
@@ -162,12 +205,18 @@ export class DocumentsController {
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Deletar um documento' })
   @ApiResponse({ status: 200, description: 'Documento deletado com sucesso.' })
-  @ApiResponse({ status: 401, description: 'Token de autenticação não fornecido ou inválido.' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para deletar este documento.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Token de autenticação não fornecido ou inválido.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Sem permissão para deletar este documento.',
+  })
   @ApiResponse({ status: 404, description: 'Documento não encontrado.' })
   async delete(
     @Param('id') id: string,
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     if (!user || !user.id) {
       throw new BadRequestException('Usuário não autenticado.');
@@ -187,13 +236,19 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Editar metadados de um documento' })
   @ApiResponse({ status: 200, description: 'Documento editado com sucesso.' })
   @ApiResponse({ status: 400, description: 'Dados de entrada inválidos.' })
-  @ApiResponse({ status: 401, description: 'Token de autenticação não fornecido ou inválido.' })
-  @ApiResponse({ status: 403, description: 'Sem permissão para editar este documento.' })
+  @ApiResponse({
+    status: 401,
+    description: 'Token de autenticação não fornecido ou inválido.',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Sem permissão para editar este documento.',
+  })
   @ApiResponse({ status: 404, description: 'Documento não encontrado.' })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateDocumentDto,
-    @CurrentUser() user: any,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     if (!user || !user.id) {
       throw new BadRequestException('Usuário não autenticado.');
@@ -215,6 +270,7 @@ export class DocumentsController {
       filePath: document.filePath,
       uploadedAt: document.uploadedAt,
       userId: document.userId,
+      isPrivate: document.isPrivate,
       tags: document.tags.map((t) => t.name),
     };
   }

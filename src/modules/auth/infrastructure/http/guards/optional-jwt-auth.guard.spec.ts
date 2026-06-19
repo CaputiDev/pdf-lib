@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return, @typescript-eslint/unbound-method */
-import { JwtAuthGuard } from './jwt-auth.guard';
+import { OptionalJwtAuthGuard } from './optional-jwt-auth.guard';
 import { JwtService } from '@nestjs/jwt';
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { ExecutionContext } from '@nestjs/common';
 
-describe('JwtAuthGuard', () => {
-  let guard: JwtAuthGuard;
+describe('OptionalJwtAuthGuard', () => {
+  let guard: OptionalJwtAuthGuard;
   let jwtService: jest.Mocked<JwtService>;
 
   beforeEach(() => {
     jwtService = {
       verifyAsync: jest.fn(),
     } as any;
-    guard = new JwtAuthGuard(jwtService);
+    guard = new OptionalJwtAuthGuard(jwtService);
   });
 
   const mockExecutionContext = (authHeader?: string): ExecutionContext => {
@@ -42,26 +42,29 @@ describe('JwtAuthGuard', () => {
     expect(context.switchToHttp().getRequest()['user']).toEqual(payload);
   });
 
-  it('should throw UnauthorizedException if auth header is missing', async () => {
+  it('should return true and NOT assign user to request if auth header is missing', async () => {
     const context = mockExecutionContext(undefined);
-    await expect(guard.canActivate(context)).rejects.toThrow(
-      UnauthorizedException,
-    );
+    const result = await guard.canActivate(context);
+
+    expect(result).toBe(true);
+    expect(context.switchToHttp().getRequest()['user']).toBeUndefined();
   });
 
-  it('should throw UnauthorizedException if auth header does not start with Bearer', async () => {
+  it('should return true and NOT assign user to request if auth header does not start with Bearer', async () => {
     const context = mockExecutionContext('Basic credentials');
-    await expect(guard.canActivate(context)).rejects.toThrow(
-      UnauthorizedException,
-    );
+    const result = await guard.canActivate(context);
+
+    expect(result).toBe(true);
+    expect(context.switchToHttp().getRequest()['user']).toBeUndefined();
   });
 
-  it('should throw UnauthorizedException if token verification fails', async () => {
+  it('should return true and NOT assign user to request if token verification fails', async () => {
     jwtService.verifyAsync.mockRejectedValue(new Error('Invalid token'));
 
     const context = mockExecutionContext('Bearer invalid-token');
-    await expect(guard.canActivate(context)).rejects.toThrow(
-      UnauthorizedException,
-    );
+    const result = await guard.canActivate(context);
+
+    expect(result).toBe(true);
+    expect(context.switchToHttp().getRequest()['user']).toBeUndefined();
   });
 });

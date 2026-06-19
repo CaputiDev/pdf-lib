@@ -29,6 +29,9 @@ model Document {
   filePath   String
   uploadedAt DateTime @default(now())
   
+  isPrivate  Boolean  @default(false)
+  encryptionKey String?
+  
   userId     String
   user       User     @relation(fields: [userId], references: [id])
   

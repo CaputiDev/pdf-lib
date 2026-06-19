@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/unbound-method */
 import { DeleteDocumentUseCase } from './delete-document.use-case';
 import { IDocumentRepository } from '../interfaces/document.repository.interface';
 import { IStorageAdapter } from '../interfaces/storage.interface';
@@ -24,7 +25,7 @@ describe('DeleteDocumentUseCase', () => {
       save: jest.fn(),
       delete: jest.fn(),
       getStream: jest.fn(),
-    } as any;
+    };
 
     useCase = new DeleteDocumentUseCase(mockRepository, mockStorage);
   });

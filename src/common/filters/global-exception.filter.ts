@@ -50,12 +50,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     });
   }
 
-  private resolveException(exception: unknown): { status: number; message: string | string[] } {
+  private resolveException(exception: unknown): {
+    status: number;
+    message: string | string[];
+  } {
     if (exception instanceof HttpException) {
       const resContent = exception.getResponse();
-      const message = typeof resContent === 'object' && resContent !== null && 'message' in resContent
-        ? (resContent as Record<string, any>).message
-        : exception.message;
+      const message =
+        typeof resContent === 'object' &&
+        resContent !== null &&
+        'message' in resContent
+          ? (resContent as Record<string, any>).message
+          : exception.message;
 
       return { status: exception.getStatus(), message };
     }
@@ -65,22 +71,35 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       let currentClass = exception.constructor as ExceptionType;
 
       // Percorre a cadeia de protótipos para dar suporte a herança de exceções
-      while (currentClass && (currentClass as any) !== Object && (currentClass as any) !== Error) {
+      while (
+        currentClass &&
+        (currentClass as any) !== Object &&
+        (currentClass as any) !== Error
+      ) {
         if (domainExceptionMap.has(currentClass)) {
           return {
             status: domainExceptionMap.get(currentClass)!,
-            message: exception.message
+            message: exception.message,
           };
         }
         currentClass = Object.getPrototypeOf(currentClass) as ExceptionType;
       }
 
       // Se for um Error desconhecido
-      this.logger.error(`Unhandled exception: ${exception.message}`, exception.stack);
-      return { status: HttpStatus.INTERNAL_SERVER_ERROR, message: exception.message };
+      this.logger.error(
+        `Unhandled exception: ${exception.message}`,
+        exception.stack,
+      );
+      return {
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: exception.message,
+      };
     }
 
     // Fallback final (caso 'exception' não seja nem objeto de Error)
-    return { status: HttpStatus.INTERNAL_SERVER_ERROR, message: 'Erro interno do servidor' };
+    return {
+      status: HttpStatus.INTERNAL_SERVER_ERROR,
+      message: 'Erro interno do servidor',
+    };
   }
 }

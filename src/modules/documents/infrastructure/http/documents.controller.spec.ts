@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/unbound-method, @typescript-eslint/no-unsafe-argument */
 import { Test, TestingModule } from '@nestjs/testing';
 import { DocumentsController } from './documents.controller';
 import { CreateDocumentUseCase } from '../../core/use-cases/create-document.use-case';
@@ -69,7 +70,9 @@ describe('DocumentsController', () => {
       createUseCase.execute.mockResolvedValue(mockDocument);
 
       const dto = { title: 'Test Title', author: 'Author Name', tags: ['pdf'] };
-      const result = await controller.create(mockFile, dto, { id: 'user-uuid' });
+      const result = await controller.create(mockFile, dto, {
+        id: 'user-uuid',
+      });
 
       expect(createUseCase.execute).toHaveBeenCalledWith({
         title: dto.title,
@@ -92,7 +95,11 @@ describe('DocumentsController', () => {
 
     it('should throw BadRequestException if file is missing', async () => {
       await expect(
-        controller.create(undefined as any, { title: 'Test' }, { id: 'user-uuid' }),
+        controller.create(
+          undefined as any,
+          { title: 'Test' },
+          { id: 'user-uuid' },
+        ),
       ).rejects.toThrow(BadRequestException);
     });
 
@@ -119,6 +126,7 @@ describe('DocumentsController', () => {
 
       expect(listUseCase.execute).toHaveBeenCalledWith({
         userId: 'user-uuid',
+        currentUserId: 'user-uuid',
         page: 1,
         limit: 10,
       });
@@ -141,7 +149,10 @@ describe('DocumentsController', () => {
 
       const result = await controller.stream('doc-uuid', res);
 
-      expect(streamUseCase.execute).toHaveBeenCalledWith('doc-uuid');
+      expect(streamUseCase.execute).toHaveBeenCalledWith({
+        id: 'doc-uuid',
+        currentUserId: undefined,
+      });
       expect(res.set).toHaveBeenCalledWith({
         'Content-Type': 'application/pdf',
         'Content-Disposition': expect.stringContaining('filename='),
@@ -164,7 +175,9 @@ describe('DocumentsController', () => {
     });
 
     it('should throw BadRequestException if x-user-id is missing', async () => {
-      await expect(controller.delete('doc-uuid', null)).rejects.toThrow(BadRequestException);
+      await expect(controller.delete('doc-uuid', null)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -173,7 +186,9 @@ describe('DocumentsController', () => {
       updateUseCase.execute.mockResolvedValue(mockDocument);
 
       const dto = { title: 'New Title', author: 'New Author', tags: ['pdf'] };
-      const result = await controller.update('doc-uuid', dto, { id: 'user-uuid' });
+      const result = await controller.update('doc-uuid', dto, {
+        id: 'user-uuid',
+      });
 
       expect(updateUseCase.execute).toHaveBeenCalledWith({
         id: 'doc-uuid',

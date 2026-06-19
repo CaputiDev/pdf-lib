@@ -27,7 +27,7 @@ describe('GlobalExceptionFilter', () => {
         getResponse: () => mockResponse,
         getRequest: () => ({}),
       }),
-    } as unknown as ArgumentsHost;
+    };
   });
 
   it('should handle HttpException correctly', () => {
@@ -151,7 +151,9 @@ describe('GlobalExceptionFilter', () => {
     const exception = new Error('Generic database failure');
     filter.catch(exception, mockArgumentsHost);
 
-    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    expect(mockResponse.status).toHaveBeenCalledWith(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
     expect(mockResponse.json).toHaveBeenCalledWith(
       expect.objectContaining({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -165,7 +167,9 @@ describe('GlobalExceptionFilter', () => {
     const exception = 'Unexpected string exception';
     filter.catch(exception, mockArgumentsHost);
 
-    expect(mockResponse.status).toHaveBeenCalledWith(HttpStatus.INTERNAL_SERVER_ERROR);
+    expect(mockResponse.status).toHaveBeenCalledWith(
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
     expect(mockResponse.json).toHaveBeenCalledWith(
       expect.objectContaining({
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,

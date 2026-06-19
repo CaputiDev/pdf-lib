@@ -6,6 +6,7 @@ import { PrismaUserRepository } from '../users/infrastructure/database/prisma-us
 import { RegisterUseCase } from './core/use-cases/register.use-case';
 import { LoginUseCase } from './core/use-cases/login.use-case';
 import { JwtAuthGuard } from './infrastructure/http/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from './infrastructure/http/guards/optional-jwt-auth.guard';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { JwtAuthGuard } from './infrastructure/http/guards/jwt-auth.guard';
   controllers: [AuthController],
   providers: [
     JwtAuthGuard,
+    OptionalJwtAuthGuard,
     {
       provide: RegisterUseCase,
       useFactory: (userRepo: PrismaUserRepository) => {
@@ -34,6 +36,6 @@ import { JwtAuthGuard } from './infrastructure/http/guards/jwt-auth.guard';
       inject: [PrismaUserRepository],
     },
   ],
-  exports: [JwtAuthGuard, RegisterUseCase, LoginUseCase],
+  exports: [JwtAuthGuard, OptionalJwtAuthGuard, RegisterUseCase, LoginUseCase],
 })
 export class AuthModule {}

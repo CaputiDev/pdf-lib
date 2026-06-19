@@ -1,4 +1,9 @@
-import { CreateDocumentUseCase, CreateDocumentInput } from './create-document.use-case';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/unbound-method, @typescript-eslint/require-await */
+import {
+  CreateDocumentUseCase,
+  CreateDocumentInput,
+} from './create-document.use-case';
+import { decryptWithKey } from '../../../../common/utils/crypto.utils';
 import { IDocumentRepository } from '../interfaces/document.repository.interface';
 import { IStorageAdapter } from '../interfaces/storage.interface';
 import { DocumentEntity } from '../entities/document.entity';
@@ -21,7 +26,7 @@ describe('CreateDocumentUseCase', () => {
       save: jest.fn(),
       delete: jest.fn(),
       getStream: jest.fn(),
-    } as any;
+    };
 
     useCase = new CreateDocumentUseCase(mockRepository, mockStorage);
   });
@@ -42,7 +47,10 @@ describe('CreateDocumentUseCase', () => {
 
     const result = await useCase.execute(validProps);
 
-    expect(mockStorage.save).toHaveBeenCalledWith('test-file.pdf', validProps.fileBuffer);
+    expect(mockStorage.save).toHaveBeenCalledWith(
+      'test-file.pdf',
+      validProps.fileBuffer,
+    );
     expect(mockRepository.create).toHaveBeenCalled();
     expect(result).toBeInstanceOf(DocumentEntity);
     expect(result.title).toBe('Test PDF Document');
@@ -58,10 +66,33 @@ describe('CreateDocumentUseCase', () => {
 
     const result = await useCase.execute({ ...validProps, tags: undefined });
 
-    expect(mockStorage.save).toHaveBeenCalledWith('test-file.pdf', validProps.fileBuffer);
+    expect(mockStorage.save).toHaveBeenCalledWith(
+      'test-file.pdf',
+      validProps.fileBuffer,
+    );
     expect(mockRepository.create).toHaveBeenCalled();
     expect(result).toBeInstanceOf(DocumentEntity);
     expect(result.tags).toHaveLength(0);
+  });
+
+  it('deve criar um documento privado criptografando o arquivo e salvando a chave no banco', async () => {
+    mockStorage.save.mockResolvedValue('uploads/test-file-private.pdf');
+    mockRepository.create.mockImplementation(async (doc) => doc);
+
+    const result = await useCase.execute({
+      ...validProps,
+      isPrivate: true,
+    });
+
+    expect(mockStorage.save).toHaveBeenCalled();
+    expect(result.isPrivate).toBe(true);
+    expect(result.encryptionKey).toHaveLength(64);
+
+    const saveCallBuffer = mockStorage.save.mock.calls[0][1];
+    expect(saveCallBuffer).not.toEqual(validProps.fileBuffer);
+
+    const decrypted = decryptWithKey(saveCallBuffer, result.encryptionKey);
+    expect(decrypted).toEqual(validProps.fileBuffer);
   });
 
   it('deve lançar InvalidDocumentException se o buffer de arquivo estiver vazio', async () => {
