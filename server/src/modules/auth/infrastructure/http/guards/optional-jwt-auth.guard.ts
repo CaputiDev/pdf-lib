@@ -25,12 +25,6 @@ export class OptionalJwtAuthGuard implements CanActivate {
 
   private extractToken(request: Request): string | undefined {
     const [type, token] = request.headers.authorization?.split(' ') ?? [];
-    if (type === 'Bearer') {
-      return token;
-    }
-    if (request.query && typeof request.query.token === 'string') {
-      return request.query.token;
-    }
-    return undefined;
+    return type === 'Bearer' ? token : undefined;
   }
 }

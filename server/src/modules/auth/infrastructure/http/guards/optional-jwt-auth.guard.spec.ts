@@ -14,16 +14,10 @@ describe('OptionalJwtAuthGuard', () => {
     guard = new OptionalJwtAuthGuard(jwtService);
   });
 
-  const mockExecutionContext = (
-    authHeader?: string,
-    queryToken?: string,
-  ): ExecutionContext => {
+  const mockExecutionContext = (authHeader?: string): ExecutionContext => {
     const request = {
       headers: {
         authorization: authHeader,
-      },
-      query: {
-        token: queryToken,
       },
     };
     return {
@@ -48,30 +42,15 @@ describe('OptionalJwtAuthGuard', () => {
     expect(context.switchToHttp().getRequest()['user']).toEqual(payload);
   });
 
-  it('should return true and assign user to request on valid token in query param', async () => {
-    const payload = { id: 'user-uuid', email: 'test@example.com' };
-    jwtService.verifyAsync.mockResolvedValue(payload);
-
-    const context = mockExecutionContext(undefined, 'query-token');
-    const result = await guard.canActivate(context);
-
-    expect(result).toBe(true);
-    expect(jwtService.verifyAsync).toHaveBeenCalledWith(
-      'query-token',
-      expect.any(Object),
-    );
-    expect(context.switchToHttp().getRequest()['user']).toEqual(payload);
-  });
-
-  it('should return true and NOT assign user to request if auth token is missing in both header and query', async () => {
-    const context = mockExecutionContext(undefined, undefined);
+  it('should return true and NOT assign user to request if auth header is missing', async () => {
+    const context = mockExecutionContext(undefined);
     const result = await guard.canActivate(context);
 
     expect(result).toBe(true);
     expect(context.switchToHttp().getRequest()['user']).toBeUndefined();
   });
 
-  it('should return true and NOT assign user to request if auth header does not start with Bearer and query is empty', async () => {
+  it('should return true and NOT assign user to request if auth header does not start with Bearer', async () => {
     const context = mockExecutionContext('Basic credentials');
     const result = await guard.canActivate(context);
 

@@ -288,14 +288,12 @@ describe('AppController (e2e)', () => {
 
     expect(streamOwnerRes.body.toString()).toBe(fileContent);
 
-    // 4.1 User A (owner) streams their private document via Query Parameter Token -> should return 200 and decrypted content
-    const streamOwnerQueryRes = await request(app.getHttpServer())
+    // 4.1 User A (owner) streams their private document via Query Parameter Token -> should return 403 Forbidden (no longer allowed)
+    await request(app.getHttpServer())
       .get(`/documents/${docId}/stream?token=${tokenA}`)
-      .expect(200);
+      .expect(403);
 
-    expect(streamOwnerQueryRes.body.toString()).toBe(fileContent);
-
-    // 4.2 User A (owner) streams with invalid query token -> should return 403 Forbidden (since verification fails silently in OptionalJwtAuthGuard and falls back to anonymous)
+    // 4.2 User A (owner) streams with invalid query token -> should return 403 Forbidden
     await request(app.getHttpServer())
       .get(`/documents/${docId}/stream?token=invalid-token`)
       .expect(403);

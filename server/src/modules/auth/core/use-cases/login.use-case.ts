@@ -17,7 +17,11 @@ export class LoginUseCase {
       throw new InvalidCredentialsException();
     }
 
-    const isPasswordValid = await bcrypt.compare(input.password, user.password);
+    const saltEnv = (process.env.BCRYPT_SALT || '10').trim();
+    const loginPassword = /^\d+$/.test(saltEnv)
+      ? input.password
+      : input.password + saltEnv;
+    const isPasswordValid = await bcrypt.compare(loginPassword, user.password);
     if (!isPasswordValid) {
       throw new InvalidCredentialsException();
     }

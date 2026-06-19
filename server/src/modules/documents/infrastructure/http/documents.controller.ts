@@ -36,6 +36,7 @@ import {
   ApiConsumes,
   ApiBody,
   ApiBearerAuth,
+  ApiParam,
 } from '@nestjs/swagger';
 
 interface AuthenticatedUser {
@@ -87,7 +88,40 @@ export class DocumentsController {
       required: ['file', 'title'],
     },
   })
-  @ApiResponse({ status: 201, description: 'Documento criado com sucesso.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Documento criado com sucesso.',
+    schema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          format: 'uuid',
+          example: 'f39ce2a6-b516-43d9-a7be-98782ee41870',
+        },
+        title: { type: 'string', example: 'Manual do Usuário' },
+        author: { type: 'string', example: 'João da Silva', nullable: true },
+        sizeBytes: { type: 'integer', example: 1048576 },
+        filePath: { type: 'string', example: 'uploads/manual_do_usuario.pdf' },
+        uploadedAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2026-06-19T16:00:00.000Z',
+        },
+        userId: {
+          type: 'string',
+          format: 'uuid',
+          example: 'e71ad06c-85a2-4a0b-9dfd-b4b3c965c822',
+        },
+        isPrivate: { type: 'boolean', example: false },
+        tags: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['pdf', 'documento'],
+        },
+      },
+    },
+  })
   @ApiResponse({
     status: 400,
     description: 'Dados de entrada ou arquivo inválidos.',
@@ -141,7 +175,56 @@ export class DocumentsController {
   @ApiOperation({ summary: 'Listar documentos com paginação e busca' })
   @ApiResponse({
     status: 200,
-    description: 'Lista de documentos e metadados de paginação.',
+    description: 'Lista de documentos e metadados de paginação com sucesso.',
+    schema: {
+      type: 'object',
+      properties: {
+        documents: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              id: {
+                type: 'string',
+                format: 'uuid',
+                example: 'f39ce2a6-b516-43d9-a7be-98782ee41870',
+              },
+              title: { type: 'string', example: 'Manual do Usuário' },
+              author: {
+                type: 'string',
+                example: 'João da Silva',
+                nullable: true,
+              },
+              sizeBytes: { type: 'integer', example: 1048576 },
+              filePath: {
+                type: 'string',
+                example: 'uploads/manual_do_usuario.pdf',
+              },
+              uploadedAt: {
+                type: 'string',
+                format: 'date-time',
+                example: '2026-06-19T16:00:00.000Z',
+              },
+              userId: {
+                type: 'string',
+                format: 'uuid',
+                example: 'e71ad06c-85a2-4a0b-9dfd-b4b3c965c822',
+              },
+              isPrivate: { type: 'boolean', example: false },
+              tags: {
+                type: 'array',
+                items: { type: 'string' },
+                example: ['pdf', 'documento'],
+              },
+            },
+          },
+        },
+        total: { type: 'integer', example: 1 },
+        page: { type: 'integer', example: 1 },
+        limit: { type: 'integer', example: 10 },
+        pages: { type: 'integer', example: 1 },
+      },
+    },
   })
   async findAll(
     @Query() query: ListDocumentsQueryDto,
@@ -181,8 +264,24 @@ export class DocumentsController {
   @ApiBearerAuth()
   @ApiOperation({
     summary: 'Obter stream do arquivo PDF para leitura progressiva',
+    description:
+      'Permite streaming de arquivos PDF. Se o arquivo for privado, requer autenticação via cabeçalho Bearer.',
   })
-  @ApiResponse({ status: 200, description: 'Stream do arquivo PDF.' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'ID do documento (UUID)',
+    example: 'f39ce2a6-b516-43d9-a7be-98782ee41870',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Stream do arquivo PDF (application/pdf).',
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Sem permissão para acessar este documento privado.',
+  })
   @ApiResponse({ status: 404, description: 'Documento não encontrado.' })
   async stream(
     @Param('id') id: string,
@@ -206,7 +305,23 @@ export class DocumentsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Deletar um documento' })
-  @ApiResponse({ status: 200, description: 'Documento deletado com sucesso.' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'ID do documento a ser excluído (UUID)',
+    example: 'f39ce2a6-b516-43d9-a7be-98782ee41870',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Documento deletado com sucesso.',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Documento deletado com sucesso.' },
+      },
+    },
+  })
   @ApiResponse({
     status: 401,
     description: 'Token de autenticação não fornecido ou inválido.',
@@ -236,7 +351,47 @@ export class DocumentsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Editar metadados de um documento' })
-  @ApiResponse({ status: 200, description: 'Documento editado com sucesso.' })
+  @ApiParam({
+    name: 'id',
+    type: 'string',
+    format: 'uuid',
+    description: 'ID do documento a ser editado (UUID)',
+    example: 'f39ce2a6-b516-43d9-a7be-98782ee41870',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Documento editado com sucesso.',
+    schema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          format: 'uuid',
+          example: 'f39ce2a6-b516-43d9-a7be-98782ee41870',
+        },
+        title: { type: 'string', example: 'Novo Título do PDF' },
+        author: { type: 'string', example: 'Novo Autor', nullable: true },
+        sizeBytes: { type: 'integer', example: 1048576 },
+        filePath: { type: 'string', example: 'uploads/novo_titulo_do_pdf.pdf' },
+        uploadedAt: {
+          type: 'string',
+          format: 'date-time',
+          example: '2026-06-19T16:00:00.000Z',
+        },
+        userId: {
+          type: 'string',
+          format: 'uuid',
+          example: 'e71ad06c-85a2-4a0b-9dfd-b4b3c965c822',
+        },
+        isPrivate: { type: 'boolean', example: false },
+        tags: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['pdf', 'atualizado'],
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 400, description: 'Dados de entrada inválidos.' })
   @ApiResponse({
     status: 401,

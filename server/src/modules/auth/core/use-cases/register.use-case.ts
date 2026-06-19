@@ -18,9 +18,14 @@ export class RegisterUseCase {
       throw new UserAlreadyExistsException(input.email);
     }
 
-    const saltEnv = process.env.BCRYPT_SALT || '10';
+    const saltEnv = (process.env.BCRYPT_SALT || '10').trim();
     const salt = /^\d+$/.test(saltEnv) ? parseInt(saltEnv, 10) : saltEnv;
-    const hashedPassword = await bcrypt.hash(input.password, salt);
+    let hashedPassword: string;
+    if (typeof salt === 'number') {
+      hashedPassword = await bcrypt.hash(input.password, salt);
+    } else {
+      hashedPassword = await bcrypt.hash(input.password + salt, 10);
+    }
     const user = UserEntity.create({
       email: input.email,
       password: hashedPassword,
