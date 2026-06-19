@@ -9,7 +9,7 @@ Uma API RESTful desenvolvida para gerenciar, catalogar e ler arquivos PDF localm
 ## ✨ Funcionalidades
 
 - **Gerenciamento de Arquivos:** Upload local de arquivos PDF interceptados e validados via Multer.
-- **Streaming de Leitura:** Rota otimizada que devolve o documento em formato de *stream* de dados, permitindo a leitura de PDFs pesados sem sobrecarregar a memória RAM do servidor.
+- **Streaming de Leitura:** Rota otimizada que devolve o documento em formato de _stream_ de dados, permitindo a leitura de PDFs pesados sem sobrecarregar a memória RAM do servidor.
 - **Catálogo de Metadados:** Armazenamento de informações do documento (Título, Autor, Tamanho, Data de Upload) com relacionamentos no banco de dados.
 - **Busca e Paginação:** Listagem eficiente de documentos com suporte a filtros e paginação.
 - **Segurança:** Autenticação via JSON Web Tokens (JWT) protegendo as rotas de criação e exclusão de arquivos.
@@ -34,6 +34,7 @@ A arquitetura do projeto foi construída utilizando o ecossistema Node.js sob os
 ## ⚙️ Pré-requisitos
 
 Antes de começar, você precisará ter as seguintes ferramentas instaladas em sua máquina:
+
 - [Node.js](https://nodejs.org/en/) (versão 18+)
 - [Docker](https://www.docker.com/) e [Docker Compose](https://docs.docker.com/compose/)
 - Um gerenciador de pacotes (NPM ou Yarn)
@@ -125,12 +126,13 @@ src/
 ```
 
 ### 🧠 Princípios de Divisão de Responsabilidades
+
 - **Camada `core` (Domain & Application):** Contém as regras de negócio puras e os casos de uso. Esta camada é 100% isolada e "desconhece" a existência do NestJS, do banco de dados (Prisma/PostgreSQL) ou do sistema de arquivos físico. Ela se comunica com o mundo externo exclusivamente através de interfaces e inversão de controle.
 - **Camada `infrastructure` (Infrastructure & Adapter):** Lida diretamente com as tecnologias e frameworks externos. Ela implementa os repositórios definidos no `core`, provê os controladores HTTP integrados ao NestJS, realiza consultas no banco de dados e executa manipulações de arquivos reais (leitura por stream ou upload via Multer).
 
 ---
 
-# 👨‍💻 Autor
+## 👨‍💻 Autor
 
 <table>
   <tr>
@@ -142,4 +144,3 @@ src/
     </td>
   </tr>
 </table>
-
