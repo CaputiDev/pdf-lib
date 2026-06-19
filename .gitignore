@@ -1,6 +1,4 @@
-# ==========================================
 # NestJS & TypeScript Build Artifacts
-# ==========================================
 /dist
 /build
 /out
@@ -9,23 +7,17 @@
 *.tsbuildinfo
 tsconfig.tsbuildinfo
 
-# ==========================================
 # Dependency Directories
-# ==========================================
 /node_modules
 /jspm_packages
 
-# ==========================================
 # Package Manager Lock Files
-# ==========================================
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
 bun.lockb
 
-# ==========================================
-# Environment & Secrets (NEVER commit these)
-# ==========================================
+# Environment & Secrets
 .env
 .env.local
 .env.development
@@ -37,9 +29,7 @@ bun.lockb
 .env*.local
 *.env
 
-# ==========================================
 # Logs & Diagnostics
-# ==========================================
 logs
 *.log
 npm-debug.log*
@@ -49,52 +39,40 @@ pnpm-debug.log*
 lerna-debug.log*
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
-# ==========================================
 # Testing & Code Coverage
-# ==========================================
 /coverage
 /.nyc_output
 /.jest
 /e2e/screenshots
 /e2e/videos
 
-# ==========================================
 # Temp, Caches, & Uploads
-# ==========================================
 .temp/
 .tmp/
 tmp/
 .eslintcache
 .prettiercache
 /uploads/
+/uploads-test/
 
-# ==========================================
 # Prisma Specifics
-# ==========================================
 /generated/prisma
-# SQLite databases (if any are used in local dev testing)
+
+# SQLite databases
 *.db
 *.db-journal
 
-# ==========================================
 # IDEs & Code Editors
-# ==========================================
-# VS Code
 .vscode/
-# WebStorm / IntelliJ
 .idea/
 *.iml
 *.iws
 *.ipr
-# Vim
 *~
 *.swp
 *.swo
 
-# ==========================================
 # Operating System Files
-# ==========================================
-# macOS
 .DS_Store
 .AppleDouble
 .LSOverride
@@ -104,10 +82,8 @@ tmp/
 .Trashes
 VolumeIcon.icns
 .com.apple.timemachine.donotpresent
-
-# Windows
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
-*.lnk
+*.lnk

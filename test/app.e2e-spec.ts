@@ -6,6 +6,8 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { GlobalExceptionFilter } from '../src/common/filters/global-exception.filter';
+import * as fs from 'fs';
+import * as path from 'path';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
@@ -330,5 +332,12 @@ describe('AppController (e2e)', () => {
 
   afterEach(async () => {
     await app.close();
+  });
+
+  afterAll(async () => {
+    const testUploadsDir = path.resolve(process.cwd(), 'uploads-test');
+    if (fs.existsSync(testUploadsDir)) {
+      await fs.promises.rm(testUploadsDir, { recursive: true, force: true });
+    }
   });
 });

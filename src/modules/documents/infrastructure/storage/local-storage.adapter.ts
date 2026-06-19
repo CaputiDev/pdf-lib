@@ -41,19 +41,30 @@ export class LocalStorageAdapter implements IStorageAdapter {
     }
   }
 
-  getStream(filePath: string): Promise<NodeJS.ReadableStream> {
+  // eslint-disable-next-line @typescript-eslint/require-await
+  async getStream(filePath: string): Promise<NodeJS.ReadableStream> {
     const fullPath = this.getAbsolutePath(filePath);
     if (!fs.existsSync(fullPath)) {
       throw new Error(`File not found at path: ${filePath}`);
     }
-    return Promise.resolve(fs.createReadStream(fullPath));
+    return fs.createReadStream(fullPath);
   }
 
   private getAbsolutePath(filePath: string): string {
     if (path.isAbsolute(filePath)) {
       return filePath;
     }
-    // If it starts with 'uploads/', resolve it from workspace root
+    
+    // If it starts with 'uploads/', resolve it using the configured uploadDir
+    if (filePath.startsWith('uploads/')) {
+      const relativePart = filePath.substring('uploads/'.length);
+      return path.join(this.uploadDir, relativePart);
+    }
+    if (filePath.startsWith('uploads\\')) {
+      const relativePart = filePath.substring('uploads\\'.length);
+      return path.join(this.uploadDir, relativePart);
+    }
+
     return path.resolve(process.cwd(), filePath);
   }
 }
