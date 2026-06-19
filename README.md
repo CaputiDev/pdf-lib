@@ -75,10 +75,10 @@ docker-compose up -d
 
 ### 5. Executar as Migrations do Prisma
 
-Gere a tipagem do Prisma e sincronize a estrutura do banco de dados:
+Aplique as migrations existentes no banco de dados e gere o cliente do Prisma:
 
 ```bash
-npx prisma migrate dev --name init
+npx prisma migrate dev
 ```
 
 ### 6. Iniciar a Aplicação
