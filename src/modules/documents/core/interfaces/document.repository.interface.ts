@@ -12,5 +12,6 @@ export interface IDocumentRepository {
   create(document: DocumentEntity): Promise<DocumentEntity>;
   findById(id: string): Promise<DocumentEntity | null>;
   findAll(filters: FindAllFilters): Promise<{ documents: DocumentEntity[]; total: number }>;
+  update(document: DocumentEntity): Promise<DocumentEntity>;
   delete(id: string): Promise<void>;
 }

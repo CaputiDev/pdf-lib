@@ -115,6 +115,37 @@ export class PrismaDocumentRepository implements IDocumentRepository {
     };
   }
 
+  async update(document: DocumentEntity): Promise<DocumentEntity> {
+    const updated = await this.prisma.document.update({
+      where: { id: document.id },
+      data: {
+        title: document.title,
+        author: document.author,
+        tags: {
+          set: [],
+          connectOrCreate: document.tags.map((tag) => ({
+            where: { name: tag.name },
+            create: { id: tag.id, name: tag.name },
+          })),
+        },
+      },
+      include: {
+        tags: true,
+      },
+    });
+
+    return new DocumentEntity({
+      id: updated.id,
+      title: updated.title,
+      author: updated.author,
+      sizeBytes: updated.sizeBytes,
+      filePath: updated.filePath,
+      uploadedAt: updated.uploadedAt,
+      userId: updated.userId,
+      tags: updated.tags.map((t) => new TagEntity({ id: t.id, name: t.name })),
+    });
+  }
+
   async delete(id: string): Promise<void> {
     await this.prisma.document.delete({
       where: { id },

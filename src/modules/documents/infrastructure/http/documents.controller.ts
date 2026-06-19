@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Delete,
+  Patch,
   Param,
   Query,
   Headers,
@@ -21,8 +22,10 @@ import { CreateDocumentUseCase } from '../../core/use-cases/create-document.use-
 import { DeleteDocumentUseCase } from '../../core/use-cases/delete-document.use-case';
 import { ListDocumentsUseCase } from '../../core/use-cases/list-documents.use-case';
 import { StreamDocumentUseCase } from '../../core/use-cases/stream-document.use-case';
+import { UpdateDocumentUseCase } from '../../core/use-cases/update-document.use-case';
 import { CreateDocumentDto } from './dtos/create-document.dto';
 import { ListDocumentsQueryDto } from './dtos/list-documents-query.dto';
+import { UpdateDocumentDto } from './dtos/update-document.dto';
 import { JwtAuthGuard } from '../../../auth/infrastructure/http/guards/jwt-auth.guard';
 import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
 import {
@@ -42,6 +45,7 @@ export class DocumentsController {
     private readonly deleteDocumentUseCase: DeleteDocumentUseCase,
     private readonly listDocumentsUseCase: ListDocumentsUseCase,
     private readonly streamDocumentUseCase: StreamDocumentUseCase,
+    private readonly updateDocumentUseCase: UpdateDocumentUseCase,
   ) {}
 
   @Post()
@@ -175,5 +179,43 @@ export class DocumentsController {
     });
 
     return { message: 'Documento deletado com sucesso.' };
+  }
+
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Editar metadados de um documento' })
+  @ApiResponse({ status: 200, description: 'Documento editado com sucesso.' })
+  @ApiResponse({ status: 400, description: 'Dados de entrada inválidos.' })
+  @ApiResponse({ status: 401, description: 'Token de autenticação não fornecido ou inválido.' })
+  @ApiResponse({ status: 403, description: 'Sem permissão para editar este documento.' })
+  @ApiResponse({ status: 404, description: 'Documento não encontrado.' })
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateDocumentDto,
+    @CurrentUser() user: any,
+  ) {
+    if (!user || !user.id) {
+      throw new BadRequestException('Usuário não autenticado.');
+    }
+
+    const document = await this.updateDocumentUseCase.execute({
+      id,
+      userId: user.id,
+      title: dto.title,
+      author: dto.author,
+      tags: dto.tags,
+    });
+
+    return {
+      id: document.id,
+      title: document.title,
+      author: document.author,
+      sizeBytes: document.sizeBytes,
+      filePath: document.filePath,
+      uploadedAt: document.uploadedAt,
+      userId: document.userId,
+      tags: document.tags.map((t) => t.name),
+    };
   }
 }

@@ -13,6 +13,7 @@ describe('PrismaDocumentRepository', () => {
       findUnique: jest.fn(),
       findMany: jest.fn(),
       count: jest.fn(),
+      update: jest.fn(),
       delete: jest.fn(),
     },
     $transaction: jest.fn(),
@@ -146,6 +147,66 @@ describe('PrismaDocumentRepository', () => {
       expect(result.documents).toHaveLength(1);
       expect(result.total).toBe(1);
       expect(result.documents[0]).toBeInstanceOf(DocumentEntity);
+    });
+  });
+
+  describe('update', () => {
+    it('should update a document and return the updated entity', async () => {
+      const documentEntity = DocumentEntity.create({
+        id: 'doc-id-1',
+        title: 'New Title',
+        author: 'New Author',
+        sizeBytes: 12345,
+        filePath: 'uploads/file.pdf',
+        userId: 'user-id-123',
+        tags: [
+          TagEntity.create({ id: 'tag-id-1', name: 'pdf' }),
+          TagEntity.create({ id: 'tag-id-3', name: 'newtag' }),
+        ],
+      });
+
+      const mockUpdatedDbDocument = {
+        ...mockDbDocument,
+        title: 'New Title',
+        author: 'New Author',
+        tags: [
+          { id: 'tag-id-1', name: 'pdf' },
+          { id: 'tag-id-3', name: 'newtag' },
+        ],
+      };
+
+      mockPrismaService.document.update.mockResolvedValue(mockUpdatedDbDocument);
+
+      const result = await repository.update(documentEntity);
+
+      expect(mockPrismaService.document.update).toHaveBeenCalledWith({
+        where: { id: 'doc-id-1' },
+        data: {
+          title: 'New Title',
+          author: 'New Author',
+          tags: {
+            set: [],
+            connectOrCreate: [
+              {
+                where: { name: 'pdf' },
+                create: { id: 'tag-id-1', name: 'pdf' },
+              },
+              {
+                where: { name: 'newtag' },
+                create: { id: 'tag-id-3', name: 'newtag' },
+              },
+            ],
+          },
+        },
+        include: {
+          tags: true,
+        },
+      });
+
+      expect(result).toBeInstanceOf(DocumentEntity);
+      expect(result.title).toBe('New Title');
+      expect(result.author).toBe('New Author');
+      expect(result.tags[1].name).toBe('newtag');
     });
   });
 

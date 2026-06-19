@@ -4,6 +4,7 @@ import { CreateDocumentUseCase } from '../../core/use-cases/create-document.use-
 import { DeleteDocumentUseCase } from '../../core/use-cases/delete-document.use-case';
 import { ListDocumentsUseCase } from '../../core/use-cases/list-documents.use-case';
 import { StreamDocumentUseCase } from '../../core/use-cases/stream-document.use-case';
+import { UpdateDocumentUseCase } from '../../core/use-cases/update-document.use-case';
 import { DocumentEntity } from '../../core/entities/document.entity';
 import { TagEntity } from '../../core/entities/tag.entity';
 import { BadRequestException, StreamableFile } from '@nestjs/common';
@@ -16,12 +17,14 @@ describe('DocumentsController', () => {
   let deleteUseCase: jest.Mocked<DeleteDocumentUseCase>;
   let listUseCase: jest.Mocked<ListDocumentsUseCase>;
   let streamUseCase: jest.Mocked<StreamDocumentUseCase>;
+  let updateUseCase: jest.Mocked<UpdateDocumentUseCase>;
 
   beforeEach(async () => {
     const mockCreateUseCase = { execute: jest.fn() };
     const mockDeleteUseCase = { execute: jest.fn() };
     const mockListUseCase = { execute: jest.fn() };
     const mockStreamUseCase = { execute: jest.fn() };
+    const mockUpdateUseCase = { execute: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [DocumentsController],
@@ -30,6 +33,7 @@ describe('DocumentsController', () => {
         { provide: DeleteDocumentUseCase, useValue: mockDeleteUseCase },
         { provide: ListDocumentsUseCase, useValue: mockListUseCase },
         { provide: StreamDocumentUseCase, useValue: mockStreamUseCase },
+        { provide: UpdateDocumentUseCase, useValue: mockUpdateUseCase },
         { provide: JwtService, useValue: { verifyAsync: jest.fn() } },
       ],
     }).compile();
@@ -39,6 +43,7 @@ describe('DocumentsController', () => {
     deleteUseCase = module.get(DeleteDocumentUseCase);
     listUseCase = module.get(ListDocumentsUseCase);
     streamUseCase = module.get(StreamDocumentUseCase);
+    updateUseCase = module.get(UpdateDocumentUseCase);
   });
 
   const mockFile = {
@@ -160,6 +165,30 @@ describe('DocumentsController', () => {
 
     it('should throw BadRequestException if x-user-id is missing', async () => {
       await expect(controller.delete('doc-uuid', null)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('update', () => {
+    it('should update a document successfully', async () => {
+      updateUseCase.execute.mockResolvedValue(mockDocument);
+
+      const dto = { title: 'New Title', author: 'New Author', tags: ['pdf'] };
+      const result = await controller.update('doc-uuid', dto, { id: 'user-uuid' });
+
+      expect(updateUseCase.execute).toHaveBeenCalledWith({
+        id: 'doc-uuid',
+        userId: 'user-uuid',
+        title: dto.title,
+        author: dto.author,
+        tags: dto.tags,
+      });
+      expect(result.id).toBe('doc-uuid');
+    });
+
+    it('should throw BadRequestException if user is missing', async () => {
+      await expect(
+        controller.update('doc-uuid', { title: 'New Title' }, null),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 });

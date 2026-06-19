@@ -6,6 +6,7 @@ import { CreateDocumentUseCase } from './core/use-cases/create-document.use-case
 import { DeleteDocumentUseCase } from './core/use-cases/delete-document.use-case';
 import { ListDocumentsUseCase } from './core/use-cases/list-documents.use-case';
 import { StreamDocumentUseCase } from './core/use-cases/stream-document.use-case';
+import { UpdateDocumentUseCase } from './core/use-cases/update-document.use-case';
 
 @Module({
   controllers: [DocumentsController],
@@ -40,12 +41,20 @@ import { StreamDocumentUseCase } from './core/use-cases/stream-document.use-case
       },
       inject: [PrismaDocumentRepository, LocalStorageAdapter],
     },
+    {
+      provide: UpdateDocumentUseCase,
+      useFactory: (repo: PrismaDocumentRepository) => {
+        return new UpdateDocumentUseCase(repo);
+      },
+      inject: [PrismaDocumentRepository],
+    },
   ],
   exports: [
     CreateDocumentUseCase,
     DeleteDocumentUseCase,
     ListDocumentsUseCase,
     StreamDocumentUseCase,
+    UpdateDocumentUseCase,
   ],
 })
 export class DocumentsModule {}

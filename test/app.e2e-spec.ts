@@ -99,6 +99,80 @@ describe('AppController (e2e)', () => {
     expect(notFoundResponse.body).toHaveProperty('statusCode', 404);
   });
 
+  it('should handle document editing (PATCH) with ownership security validation', async () => {
+    // 1. Register and login User A (owner)
+    const emailA = `usera-${Date.now()}@example.com`;
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: emailA, password: 'password123', name: 'User A' })
+      .expect(201);
+    const loginA = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: emailA, password: 'password123' })
+      .expect(200);
+    const tokenA = loginA.body.access_token;
+
+    // 2. Register and login User B (attacker)
+    const emailB = `userb-${Date.now()}@example.com`;
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: emailB, password: 'password123', name: 'User B' })
+      .expect(201);
+    const loginB = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: emailB, password: 'password123' })
+      .expect(200);
+    const tokenB = loginB.body.access_token;
+
+    // 3. User A uploads a document
+    const uploadRes = await request(app.getHttpServer())
+      .post('/documents')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .attach('file', Buffer.from('%PDF-1.4 ... mock pdf content ...'), 'sample.pdf')
+      .field('title', 'Original Document Title')
+      .field('author', 'Original Writer')
+      .field('tags', 'pdf,first')
+      .expect(201);
+
+    const docId = uploadRes.body.id;
+
+    // 4. User B tries to edit User A's document (should fail with 403 Forbidden)
+    await request(app.getHttpServer())
+      .patch(`/documents/${docId}`)
+      .set('Authorization', `Bearer ${tokenB}`)
+      .send({ title: 'Hacked Title' })
+      .expect(403);
+
+    // 5. User A updates their document (should succeed)
+    const updateRes = await request(app.getHttpServer())
+      .patch(`/documents/${docId}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({
+        title: 'New Document Title',
+        author: 'New Writer',
+        tags: ['pdf', 'updated'],
+      })
+      .expect(200);
+
+    expect(updateRes.body.title).toBe('New Document Title');
+    expect(updateRes.body.author).toBe('New Writer');
+    expect(updateRes.body.tags).toEqual(['pdf', 'updated']);
+
+    // 6. User A tries to edit with invalid title (should fail with 400 Bad Request)
+    await request(app.getHttpServer())
+      .patch(`/documents/${docId}`)
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ title: '' })
+      .expect(400);
+
+    // 7. User A tries to edit non-existent document (should fail with 404 Not Found)
+    await request(app.getHttpServer())
+      .patch('/documents/00000000-0000-0000-0000-000000000000')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send({ title: 'Valid Title' })
+      .expect(404);
+  });
+
   afterEach(async () => {
     await app.close();
   });
