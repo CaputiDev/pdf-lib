@@ -6,6 +6,7 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { GlobalExceptionFilter } from '../src/common/filters/global-exception.filter';
+import { PrismaService } from '../src/config/prisma/prisma.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -346,6 +347,10 @@ describe('AppController (e2e)', () => {
   });
 
   afterEach(async () => {
+    const prisma = app.get(PrismaService);
+    await prisma.document.deleteMany();
+    await prisma.tag.deleteMany();
+    await prisma.user.deleteMany();
     await app.close();
   });
 
