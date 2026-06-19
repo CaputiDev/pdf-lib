@@ -52,6 +52,18 @@ describe('CreateDocumentUseCase', () => {
     expect(result.tags[1].name).toBe('test');
   });
 
+  it('deve criar um documento sem tags com sucesso', async () => {
+    mockStorage.save.mockResolvedValue('uploads/test-file.pdf');
+    mockRepository.create.mockImplementation(async (doc) => doc);
+
+    const result = await useCase.execute({ ...validProps, tags: undefined });
+
+    expect(mockStorage.save).toHaveBeenCalledWith('test-file.pdf', validProps.fileBuffer);
+    expect(mockRepository.create).toHaveBeenCalled();
+    expect(result).toBeInstanceOf(DocumentEntity);
+    expect(result.tags).toHaveLength(0);
+  });
+
   it('deve lançar InvalidDocumentException se o buffer de arquivo estiver vazio', async () => {
     const invalidProps = { ...validProps, fileBuffer: Buffer.alloc(0) };
 

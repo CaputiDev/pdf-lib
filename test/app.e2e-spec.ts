@@ -173,6 +173,55 @@ describe('AppController (e2e)', () => {
       .expect(404);
   });
 
+  it('should allow uploading a document without tags', async () => {
+    // 1. Register and login User A
+    const emailA = `usertags-${Date.now()}@example.com`;
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: emailA, password: 'password123', name: 'User A' })
+      .expect(201);
+    const loginA = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: emailA, password: 'password123' })
+      .expect(200);
+    const tokenA = loginA.body.access_token;
+
+    // 2. Upload with tags as empty string "" (simulating empty field in Swagger/Postman)
+    const uploadRes = await request(app.getHttpServer())
+      .post('/documents')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .attach('file', Buffer.from('%PDF-1.4 ... mock pdf content ...'), 'sample.pdf')
+      .field('title', 'Document Without Tags')
+      .field('tags', '')
+      .expect(201);
+
+    expect(uploadRes.body.tags).toEqual([]);
+  });
+
+  it('should allow uploading a document omitting tags field completely', async () => {
+    // 1. Register and login User A
+    const emailA = `usertags-omitted-${Date.now()}@example.com`;
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: emailA, password: 'password123', name: 'User A' })
+      .expect(201);
+    const loginA = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email: emailA, password: 'password123' })
+      .expect(200);
+    const tokenA = loginA.body.access_token;
+
+    // 2. Upload without tags field
+    const uploadRes = await request(app.getHttpServer())
+      .post('/documents')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .attach('file', Buffer.from('%PDF-1.4 ... mock pdf content ...'), 'sample.pdf')
+      .field('title', 'Document Without Tags Omitted')
+      .expect(201);
+
+    expect(uploadRes.body.tags).toEqual([]);
+  });
+
   afterEach(async () => {
     await app.close();
   });
