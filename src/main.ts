@@ -23,6 +23,8 @@ async function bootstrap() {
     .setDescription('RESTful API to manage, catalog and read PDF files locally')
     .setVersion('1.0')
     .addBearerAuth()
+    .addTag('Auth', 'Gerenciamento de autenticação e contas de usuário')
+    .addTag('Documents', 'Operações de catalogação e leitura de arquivos PDF')
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('swagger', app, document);
