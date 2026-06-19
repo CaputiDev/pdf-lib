@@ -7,14 +7,14 @@ export class DocumentException extends Error {
 }
 
 export class DocumentNotFoundException extends DocumentException {
-  constructor(id: string) {
-    super(`Documento com ID "${id}" não foi encontrado.`);
+  constructor(id?: string) {
+    super('Document with the specified ID was not found.');
   }
 }
 
 export class UnauthorizedDocumentException extends DocumentException {
   constructor(
-    message = 'Você não tem permissão para realizar esta operação neste documento.',
+    message = 'You do not have permission to perform this operation on this document.',
   ) {
     super(message);
   }

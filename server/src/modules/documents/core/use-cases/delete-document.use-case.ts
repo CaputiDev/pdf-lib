@@ -26,7 +26,7 @@ export class DeleteDocumentUseCase {
     // 2. Verificar se o usuário solicitante é o proprietário
     if (document.userId !== input.userId) {
       throw new UnauthorizedDocumentException(
-        'Você não tem permissão para deletar este documento.',
+        'You do not have permission to delete this document.',
       );
     }
 

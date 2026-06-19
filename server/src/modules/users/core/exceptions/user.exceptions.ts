@@ -7,8 +7,8 @@ export class UserException extends Error {
 }
 
 export class UserAlreadyExistsException extends UserException {
-  constructor(email: string) {
-    super(`Um usuário com o e-mail "${email}" já está cadastrado.`);
+  constructor(email?: string) {
+    super('Email address is already in use.');
   }
 }
 
@@ -19,7 +19,7 @@ export class InvalidUserException extends UserException {
 }
 
 export class InvalidCredentialsException extends UserException {
-  constructor(message = 'E-mail ou senha inválidos.') {
+  constructor(message = 'Invalid email or password.') {
     super(message);
   }
 }

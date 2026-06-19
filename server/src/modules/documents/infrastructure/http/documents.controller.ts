@@ -137,13 +137,13 @@ export class DocumentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     if (!user || !user.id) {
-      throw new BadRequestException('Usuário não autenticado.');
+      throw new BadRequestException('User is not authenticated.');
     }
     if (!file) {
-      throw new BadRequestException('O arquivo PDF é obrigatório.');
+      throw new BadRequestException('PDF file is required.');
     }
     if (file.mimetype !== 'application/pdf') {
-      throw new BadRequestException('Apenas arquivos PDF são permitidos.');
+      throw new BadRequestException('Only PDF files are allowed.');
     }
 
     const document = await this.createDocumentUseCase.execute({
@@ -336,7 +336,7 @@ export class DocumentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     if (!user || !user.id) {
-      throw new BadRequestException('Usuário não autenticado.');
+      throw new BadRequestException('User is not authenticated.');
     }
 
     await this.deleteDocumentUseCase.execute({
@@ -408,7 +408,7 @@ export class DocumentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     if (!user || !user.id) {
-      throw new BadRequestException('Usuário não autenticado.');
+      throw new BadRequestException('User is not authenticated.');
     }
 
     const document = await this.updateDocumentUseCase.execute({

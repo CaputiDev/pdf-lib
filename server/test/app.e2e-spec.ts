@@ -62,7 +62,7 @@ describe('AppController (e2e)', () => {
 
     expect(duplicateRegisterResponse.body).toHaveProperty('statusCode', 409);
     expect(duplicateRegisterResponse.body.message[0]).toContain(
-      'já está cadastrado.',
+      'Email address is already in use.',
     );
 
     // 3. Login with wrong credentials (should fail with 401 Unauthorized via GlobalExceptionFilter)
@@ -73,7 +73,7 @@ describe('AppController (e2e)', () => {
 
     expect(invalidLoginResponse.body).toHaveProperty('statusCode', 401);
     expect(invalidLoginResponse.body.message[0]).toContain(
-      'E-mail ou senha inválidos.',
+      'Invalid email or password.',
     );
 
     // 4. Login successfully
@@ -96,7 +96,7 @@ describe('AppController (e2e)', () => {
       .expect(400);
 
     expect(invalidUploadResponse.body.message[0]).toContain(
-      'O arquivo PDF é obrigatório.',
+      'PDF file is required.',
     );
 
     // 7. Request a non-existent document ID (should fail with 404 Not Found via GlobalExceptionFilter)

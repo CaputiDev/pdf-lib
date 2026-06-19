@@ -27,7 +27,7 @@ export class UpdateDocumentUseCase {
 
       if (document.userId !== input.userId) {
         throw new UnauthorizedDocumentException(
-          'Você não tem permissão para editar este documento.',
+          'You do not have permission to edit this document.',
         );
       }
 
@@ -60,7 +60,7 @@ export class UpdateDocumentUseCase {
       const message =
         error instanceof Error
           ? error.message
-          : 'Erro desconhecido ao atualizar o documento.';
+          : 'Unknown error while updating the document.';
       throw new InvalidDocumentException(message);
     }
   }

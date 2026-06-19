@@ -12,14 +12,14 @@ export class TagEntity {
 
   static create(properties: { name: string; id?: string }): TagEntity {
     if (!properties.name || properties.name.trim() === '') {
-      throw new InvalidDocumentException('O nome da tag não pode ser vazio.');
+      throw new InvalidDocumentException('Tag name cannot be empty.');
     }
 
     const name = properties.name.trim().toLowerCase();
     const regex = /^[\p{L}\p{N}]+$/u;
     if (!regex.test(name)) {
       throw new InvalidDocumentException(
-        `A tag "${properties.name}" contém símbolos ou espaços inválidos. Use apenas letras e números.`,
+        `Tag "${properties.name}" contains invalid symbols or spaces. Use only letters and numbers.`,
       );
     }
 

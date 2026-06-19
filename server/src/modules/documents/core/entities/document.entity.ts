@@ -1,5 +1,6 @@
 import * as crypto from 'crypto';
 import { TagEntity } from './tag.entity';
+import { InvalidDocumentException } from '../exceptions/document.exceptions';
 
 export class DocumentEntity {
   readonly id: string;
@@ -50,19 +51,19 @@ export class DocumentEntity {
     uploadedAt?: Date;
   }): DocumentEntity {
     if (!properties.title || properties.title.trim() === '') {
-      throw new Error('O título do documento não pode ser vazio.');
+      throw new InvalidDocumentException('Document title cannot be empty.');
     }
 
     if (!properties.filePath || properties.filePath.trim() === '') {
-      throw new Error('O caminho do arquivo não pode ser vazio.');
+      throw new InvalidDocumentException('File path cannot be empty.');
     }
 
     if (properties.sizeBytes <= 0) {
-      throw new Error('O tamanho do arquivo deve ser maior que zero bytes.');
+      throw new InvalidDocumentException('File size must be greater than zero bytes.');
     }
 
     if (!properties.userId || properties.userId.trim() === '') {
-      throw new Error('O identificador do usuário proprietário é obrigatório.');
+      throw new InvalidDocumentException('Owner user identifier is required.');
     }
 
     return new DocumentEntity({

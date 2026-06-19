@@ -28,7 +28,7 @@ export class CreateDocumentUseCase {
   async execute(input: CreateDocumentInput): Promise<DocumentEntity> {
     try {
       if (!input.fileBuffer || input.fileBuffer.length === 0) {
-        throw new InvalidDocumentException('O arquivo enviado está vazio.');
+        throw new InvalidDocumentException('The uploaded file is empty.');
       }
 
       const isPrivate = input.isPrivate ?? false;
@@ -72,7 +72,7 @@ export class CreateDocumentUseCase {
       const message =
         error instanceof Error
           ? error.message
-          : 'Erro desconhecido ao criar o documento.';
+          : 'Unknown error while creating the document.';
       throw new InvalidDocumentException(message);
     }
   }

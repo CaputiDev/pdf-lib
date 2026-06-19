@@ -4,6 +4,7 @@ import { IStorageAdapter } from '../interfaces/storage.interface';
 import {
   DocumentNotFoundException,
   UnauthorizedDocumentException,
+  InvalidDocumentException,
 } from '../exceptions/document.exceptions';
 import { decryptWithKey } from '../../../../common/utils/crypto.utils';
 import { Readable } from 'stream';
@@ -48,7 +49,7 @@ export class StreamDocumentUseCase {
     if (document.isPrivate) {
       if (!input.currentUserId || document.userId !== input.currentUserId) {
         throw new UnauthorizedDocumentException(
-          'Você não tem permissão para acessar este documento privado.',
+          'You do not have permission to access this private document.',
         );
       }
     }
@@ -61,8 +62,8 @@ export class StreamDocumentUseCase {
     // 4. Se for privado, descriptografar o arquivo
     if (document.isPrivate) {
       if (!document.encryptionKey) {
-        throw new Error(
-          'Chave de criptografia ausente para documento privado.',
+        throw new InvalidDocumentException(
+          'Missing encryption key for private document.',
         );
       }
 

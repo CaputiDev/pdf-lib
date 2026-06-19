@@ -31,14 +31,14 @@ export class UserEntity {
   }): UserEntity {
     if (!properties.email || !properties.email.includes('@')) {
       throw new InvalidUserException(
-        'O e-mail informado é inválido ou está vazio.',
+        'The provided email address is invalid or empty.',
       );
     }
     if (!properties.password || properties.password.trim() === '') {
-      throw new InvalidUserException('A senha do usuário não pode ser vazia.');
+      throw new InvalidUserException('User password cannot be empty.');
     }
     if (!properties.name || properties.name.trim() === '') {
-      throw new InvalidUserException('O nome do usuário não pode ser vazio.');
+      throw new InvalidUserException('User name cannot be empty.');
     }
 
     return new UserEntity({

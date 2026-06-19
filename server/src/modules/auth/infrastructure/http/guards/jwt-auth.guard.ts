@@ -15,7 +15,7 @@ export class JwtAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const token = this.extractToken(request);
     if (!token) {
-      throw new UnauthorizedException('Token de autenticação não fornecido.');
+      throw new UnauthorizedException('Authentication token was not provided.');
     }
     try {
       const payload: unknown = await this.jwtService.verifyAsync(token, {
@@ -25,7 +25,7 @@ export class JwtAuthGuard implements CanActivate {
       (request as any)['user'] = payload;
     } catch {
       throw new UnauthorizedException(
-        'Token de autenticação inválido ou expirado.',
+        'Invalid or expired authentication token.',
       );
     }
     return true;
