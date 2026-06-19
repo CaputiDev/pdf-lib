@@ -8,6 +8,7 @@ import { DocumentEntity } from '../../core/entities/document.entity';
 import { TagEntity } from '../../core/entities/tag.entity';
 import { BadRequestException, StreamableFile } from '@nestjs/common';
 import { Readable } from 'stream';
+import { JwtService } from '@nestjs/jwt';
 
 describe('DocumentsController', () => {
   let controller: DocumentsController;
@@ -29,6 +30,7 @@ describe('DocumentsController', () => {
         { provide: DeleteDocumentUseCase, useValue: mockDeleteUseCase },
         { provide: ListDocumentsUseCase, useValue: mockListUseCase },
         { provide: StreamDocumentUseCase, useValue: mockStreamUseCase },
+        { provide: JwtService, useValue: { verifyAsync: jest.fn() } },
       ],
     }).compile();
 
@@ -62,7 +64,7 @@ describe('DocumentsController', () => {
       createUseCase.execute.mockResolvedValue(mockDocument);
 
       const dto = { title: 'Test Title', author: 'Author Name', tags: ['pdf'] };
-      const result = await controller.create(mockFile, dto, 'user-uuid');
+      const result = await controller.create(mockFile, dto, { id: 'user-uuid' });
 
       expect(createUseCase.execute).toHaveBeenCalledWith({
         title: dto.title,
@@ -79,20 +81,20 @@ describe('DocumentsController', () => {
 
     it('should throw BadRequestException if x-user-id is missing', async () => {
       await expect(
-        controller.create(mockFile, { title: 'Test' }, ''),
+        controller.create(mockFile, { title: 'Test' }, null),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if file is missing', async () => {
       await expect(
-        controller.create(undefined as any, { title: 'Test' }, 'user-uuid'),
+        controller.create(undefined as any, { title: 'Test' }, { id: 'user-uuid' }),
       ).rejects.toThrow(BadRequestException);
     });
 
     it('should throw BadRequestException if file mimetype is not PDF', async () => {
       const invalidFile = { ...mockFile, mimetype: 'image/png' } as any;
       await expect(
-        controller.create(invalidFile, { title: 'Test' }, 'user-uuid'),
+        controller.create(invalidFile, { title: 'Test' }, { id: 'user-uuid' }),
       ).rejects.toThrow(BadRequestException);
     });
   });
@@ -147,7 +149,7 @@ describe('DocumentsController', () => {
     it('should delete a document successfully', async () => {
       deleteUseCase.execute.mockResolvedValue(undefined);
 
-      const result = await controller.delete('doc-uuid', 'user-uuid');
+      const result = await controller.delete('doc-uuid', { id: 'user-uuid' });
 
       expect(deleteUseCase.execute).toHaveBeenCalledWith({
         id: 'doc-uuid',
@@ -157,7 +159,7 @@ describe('DocumentsController', () => {
     });
 
     it('should throw BadRequestException if x-user-id is missing', async () => {
-      await expect(controller.delete('doc-uuid', '')).rejects.toThrow(BadRequestException);
+      await expect(controller.delete('doc-uuid', null)).rejects.toThrow(BadRequestException);
     });
   });
 });

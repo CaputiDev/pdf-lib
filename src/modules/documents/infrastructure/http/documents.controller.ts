@@ -12,6 +12,7 @@ import {
   Res,
   StreamableFile,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import type { Response } from 'express';
@@ -22,7 +23,18 @@ import { ListDocumentsUseCase } from '../../core/use-cases/list-documents.use-ca
 import { StreamDocumentUseCase } from '../../core/use-cases/stream-document.use-case';
 import { CreateDocumentDto } from './dtos/create-document.dto';
 import { ListDocumentsQueryDto } from './dtos/list-documents-query.dto';
+import { JwtAuthGuard } from '../../../auth/infrastructure/http/guards/jwt-auth.guard';
+import { CurrentUser } from '../../../../common/decorators/current-user.decorator';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiConsumes,
+  ApiBody,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 
+@ApiTags('Documents')
 @Controller('documents')
 export class DocumentsController {
   constructor(
@@ -33,14 +45,33 @@ export class DocumentsController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @UseInterceptors(FileInterceptor('file'))
+  @ApiOperation({ summary: 'Fazer upload de um arquivo PDF' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary', description: 'Arquivo PDF para upload' },
+        title: { type: 'string', description: 'Título do documento' },
+        author: { type: 'string', description: 'Autor do documento (opcional)' },
+        tags: { type: 'string', description: 'Tags separadas por vírgula ou JSON array' },
+      },
+      required: ['file', 'title'],
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Documento criado com sucesso.' })
+  @ApiResponse({ status: 400, description: 'Dados de entrada ou arquivo inválidos.' })
+  @ApiResponse({ status: 401, description: 'Token de autenticação não fornecido ou inválido.' })
   async create(
     @UploadedFile() file: Express.Multer.File,
     @Body() dto: CreateDocumentDto,
-    @Headers('x-user-id') userId: string,
+    @CurrentUser() user: any,
   ) {
-    if (!userId || userId.trim() === '') {
-      throw new BadRequestException('O cabeçalho x-user-id é obrigatório para esta operação.');
+    if (!user || !user.id) {
+      throw new BadRequestException('Usuário não autenticado.');
     }
     if (!file) {
       throw new BadRequestException('O arquivo PDF é obrigatório.');
@@ -55,7 +86,7 @@ export class DocumentsController {
       fileName: file.originalname,
       fileBuffer: file.buffer,
       sizeBytes: file.size,
-      userId,
+      userId: user.id,
       tags: dto.tags,
     });
 
@@ -72,6 +103,8 @@ export class DocumentsController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'Listar documentos com paginação e busca' })
+  @ApiResponse({ status: 200, description: 'Lista de documentos e metadados de paginação.' })
   async findAll(
     @Query() query: ListDocumentsQueryDto,
     @Headers('x-user-id') userId?: string,
@@ -103,6 +136,9 @@ export class DocumentsController {
   }
 
   @Get(':id/stream')
+  @ApiOperation({ summary: 'Obter stream do arquivo PDF para leitura progressiva' })
+  @ApiResponse({ status: 200, description: 'Stream do arquivo PDF.' })
+  @ApiResponse({ status: 404, description: 'Documento não encontrado.' })
   async stream(
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
@@ -118,17 +154,24 @@ export class DocumentsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Deletar um documento' })
+  @ApiResponse({ status: 200, description: 'Documento deletado com sucesso.' })
+  @ApiResponse({ status: 401, description: 'Token de autenticação não fornecido ou inválido.' })
+  @ApiResponse({ status: 403, description: 'Sem permissão para deletar este documento.' })
+  @ApiResponse({ status: 404, description: 'Documento não encontrado.' })
   async delete(
     @Param('id') id: string,
-    @Headers('x-user-id') userId: string,
+    @CurrentUser() user: any,
   ) {
-    if (!userId || userId.trim() === '') {
-      throw new BadRequestException('O cabeçalho x-user-id é obrigatório para esta operação.');
+    if (!user || !user.id) {
+      throw new BadRequestException('Usuário não autenticado.');
     }
 
     await this.deleteDocumentUseCase.execute({
       id,
-      userId,
+      userId: user.id,
     });
 
     return { message: 'Documento deletado com sucesso.' };
