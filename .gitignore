@@ -27,3 +27,7 @@ lerna-debug.log*
 /uploads
 
 /generated/prisma
+
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
