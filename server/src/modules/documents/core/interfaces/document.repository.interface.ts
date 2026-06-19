@@ -3,6 +3,7 @@ import { DocumentEntity } from '../entities/document.entity';
 export interface FindAllFilters {
   userId?: string;
   currentUserId?: string;
+  username?: string;
   search?: string;
   tag?: string;
   skip?: number;

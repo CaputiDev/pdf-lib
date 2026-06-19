@@ -121,12 +121,12 @@ describe('DocumentsController', () => {
         pages: 1,
       });
 
-      const query = { page: 1, limit: 10 };
-      const result = await controller.findAll(query, 'user-uuid');
+      const query = { page: 1, limit: 10, username: 'João Silva' };
+      const result = await controller.findAll(query);
 
       expect(listUseCase.execute).toHaveBeenCalledWith({
-        userId: 'user-uuid',
-        currentUserId: 'user-uuid',
+        currentUserId: undefined,
+        username: 'João Silva',
         page: 1,
         limit: 10,
       });

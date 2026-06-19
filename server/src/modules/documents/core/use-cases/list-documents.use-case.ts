@@ -4,6 +4,7 @@ import { IDocumentRepository } from '../interfaces/document.repository.interface
 export interface ListDocumentsInput {
   userId?: string;
   currentUserId?: string;
+  username?: string;
   search?: string;
   tag?: string;
   page?: number;
@@ -30,6 +31,7 @@ export class ListDocumentsUseCase {
     const { documents, total } = await this.documentRepository.findAll({
       userId: input.userId,
       currentUserId: input.currentUserId,
+      username: input.username,
       search: input.search,
       tag: input.tag,
       skip,

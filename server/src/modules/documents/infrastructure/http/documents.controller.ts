@@ -37,6 +37,7 @@ import {
   ApiBody,
   ApiBearerAuth,
   ApiParam,
+  ApiHeader,
 } from '@nestjs/swagger';
 
 interface AuthenticatedUser {
@@ -53,7 +54,7 @@ export class DocumentsController {
     private readonly listDocumentsUseCase: ListDocumentsUseCase,
     private readonly streamDocumentUseCase: StreamDocumentUseCase,
     private readonly updateDocumentUseCase: UpdateDocumentUseCase,
-  ) {}
+  ) { }
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -228,14 +229,13 @@ export class DocumentsController {
   })
   async findAll(
     @Query() query: ListDocumentsQueryDto,
-    @Headers('x-user-id') userId?: string,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
     const result = await this.listDocumentsUseCase.execute({
-      userId,
-      currentUserId: user?.id || userId,
+      currentUserId: user?.id,
       search: query.search,
       tag: query.tag,
+      username: query.username,
       page: query.page,
       limit: query.limit,
     });

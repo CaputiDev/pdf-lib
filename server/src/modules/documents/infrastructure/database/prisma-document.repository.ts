@@ -117,6 +117,15 @@ export class PrismaDocumentRepository implements IDocumentRepository {
       });
     }
 
+    // Username condition
+    if (filters.username) {
+      conditions.push({
+        user: {
+          name: { contains: filters.username, mode: 'insensitive' },
+        },
+      });
+    }
+
     const where = conditions.length > 0 ? { AND: conditions } : {};
 
     const [docs, total] = await this.prisma.$transaction([

@@ -13,6 +13,14 @@ export class ListDocumentsQueryDto {
   search?: string;
 
   @ApiPropertyOptional({
+    description: 'Filtrar os documentos pelo nome do criador/usuário',
+    example: 'João Silva',
+  })
+  @IsString()
+  @IsOptional()
+  username?: string;
+
+  @ApiPropertyOptional({
     description: 'Filtrar os documentos por uma tag específica',
     example: 'pdf',
   })

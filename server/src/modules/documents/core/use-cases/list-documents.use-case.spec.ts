@@ -51,6 +51,7 @@ describe('ListDocumentsUseCase', () => {
     expect(mockRepository.findAll).toHaveBeenCalledWith({
       userId: 'user-1',
       currentUserId: undefined,
+      username: undefined,
       search: 'Doc',
       tag: undefined,
       skip: 0,
@@ -75,6 +76,7 @@ describe('ListDocumentsUseCase', () => {
     expect(mockRepository.findAll).toHaveBeenCalledWith({
       userId: undefined,
       currentUserId: undefined,
+      username: undefined,
       search: undefined,
       tag: undefined,
       skip: 0,
@@ -97,6 +99,7 @@ describe('ListDocumentsUseCase', () => {
     expect(mockRepository.findAll).toHaveBeenCalledWith({
       userId: undefined,
       currentUserId: undefined,
+      username: undefined,
       search: undefined,
       tag: undefined,
       skip: 10,
