@@ -67,6 +67,7 @@ tmp/
 .eslintcache
 .prettiercache
 /uploads/
+/uploads-test/
 
 # ==========================================
 # Prisma Specifics
@@ -110,4 +111,4 @@ Thumbs.db
 ehthumbs.db
 Desktop.ini
 $RECYCLE.BIN/
-*.lnk
+*.lnk

@@ -54,7 +54,7 @@ describe('LocalStorageAdapter', () => {
       await adapter.delete('uploads/test-file.pdf');
 
       expect(fs.promises.unlink).toHaveBeenCalledWith(
-        expect.stringContaining(path.join('uploads', 'test-file.pdf')),
+        expect.stringContaining(path.join('uploads-test', 'test-file.pdf')),
       );
     });
 
@@ -88,10 +88,10 @@ describe('LocalStorageAdapter', () => {
       const stream = await adapter.getStream('uploads/file.pdf');
 
       expect(fs.existsSync).toHaveBeenCalledWith(
-        expect.stringContaining(path.join('uploads', 'file.pdf')),
+        expect.stringContaining(path.join('uploads-test', 'file.pdf')),
       );
       expect(fs.createReadStream).toHaveBeenCalledWith(
-        expect.stringContaining(path.join('uploads', 'file.pdf')),
+        expect.stringContaining(path.join('uploads-test', 'file.pdf')),
       );
       expect(stream).toBe(mockStream);
     });
