@@ -1,7 +1,5 @@
 # 📚 PDF Library
 
-![GitHub last commit](https://img.shields.io/github/last-commit/caputidev/pdf-lib?style=for-the-badge)
-
 Uma API RESTful desenvolvida para gerenciar, catalogar e ler arquivos PDF localmente, inspirada na organização de bibliotecas digitais de jogos e pautada na filosofia open-source. Esse projeto foi desenvolvido como parte do curso de **Sistemas para a Internet** no **IFSul - Câmpus Charqueadas**.
 
 ---
@@ -47,6 +45,7 @@ Antes de começar, você precisará ter as seguintes ferramentas instaladas em s
 
 ```bash
 git clone https://github.com/caputidev/pdf-lib
+
 cd pdf-lib
 ```
 
@@ -58,16 +57,21 @@ npm install
 
 ### 3. Configurar variáveis de ambiente
 
-Crie um arquivo `.env` na raiz do projeto e configure as variáveis de ambiente baseando-se no arquivo `.env.example`:
+Crie um arquivo `.env` na raiz do projeto e configure as variáveis de ambiente baseando-se no arquivo [`.env.example`](./.env.example):
 
-```env
+```bash
+
 DATABASE_URL="postgresql://admin:admin@localhost:5433/pdflibrary?schema=public"
+
 JWT_SECRET="sua-chave-secreta-super-segura"
+
+PORT=3000
+
 ```
 
 ### 4. Subir o Banco de Dados (Docker)
 
-Inicie o container do PostgreSQL mapeado no arquivo `docker-compose.yml`:
+Inicie o container do PostgreSQL mapeado no arquivo [`docker-compose.yml`](./docker-compose.yml):
 
 ```bash
 docker-compose up -d
@@ -75,10 +79,10 @@ docker-compose up -d
 
 ### 5. Executar as Migrations do Prisma
 
-Gere a tipagem do Prisma e sincronize a estrutura do banco de dados:
+Aplique as migrations existentes no banco de dados e gere o cliente do Prisma:
 
 ```bash
-npx prisma migrate dev --name init
+npx prisma migrate dev
 ```
 
 ### 6. Iniciar a Aplicação
