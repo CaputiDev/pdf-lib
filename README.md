@@ -101,7 +101,7 @@ A API estará rodando em `http://localhost:3000`.
 
 Com o servidor rodando, você pode acessar a documentação interativa com todos os endpoints, schemas e simulações de requisições através do link:
 
-👉 [http://localhost:3000/pdf-lib](http://localhost:3000/pdf-lib)
+👉 [http://localhost:3000/swagger](http://localhost:3000/swagger)
 
 ---
 
