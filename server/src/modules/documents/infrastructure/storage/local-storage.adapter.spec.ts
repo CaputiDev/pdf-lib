@@ -26,12 +26,13 @@ describe('LocalStorageAdapter', () => {
   });
 
   describe('save', () => {
-    it('should create directory, write file, and return relative path', async () => {
-      const fileName = 'test.pdf';
+    it('should create directory, write file, and return sanitized relative path', async () => {
+      const fileName = 'My Test Document.PDF';
       const buffer = Buffer.from('hello');
 
       (fs.promises.mkdir as jest.Mock).mockResolvedValue(undefined);
       (fs.promises.writeFile as jest.Mock).mockResolvedValue(undefined);
+      (fs.existsSync as jest.Mock).mockReturnValue(false);
 
       const result = await adapter.save(fileName, buffer);
 
@@ -39,11 +40,27 @@ describe('LocalStorageAdapter', () => {
         recursive: true,
       });
       expect(fs.promises.writeFile).toHaveBeenCalledWith(
-        expect.any(String),
+        expect.stringContaining('my_test_document.pdf'),
         buffer,
       );
-      expect(result).toMatch(/^uploads\/test-\d+-/);
-      expect(result.endsWith('.pdf')).toBe(true);
+      expect(result).toBe('uploads/my_test_document.pdf');
+    });
+
+    it('should append an incremented suffix if a file with the same name already exists', async () => {
+      const fileName = 'test.pdf';
+      const buffer = Buffer.from('hello');
+
+      (fs.promises.mkdir as jest.Mock).mockResolvedValue(undefined);
+      (fs.promises.writeFile as jest.Mock).mockResolvedValue(undefined);
+      // First check (test.pdf) exists, second check (test_1.pdf) exists, third check (test_2.pdf) does not exist
+      (fs.existsSync as jest.Mock)
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false);
+
+      const result = await adapter.save(fileName, buffer);
+
+      expect(result).toBe('uploads/test_2.pdf');
     });
   });
 

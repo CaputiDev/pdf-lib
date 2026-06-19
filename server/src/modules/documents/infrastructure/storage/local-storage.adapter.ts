@@ -17,11 +17,21 @@ export class LocalStorageAdapter implements IStorageAdapter {
     // Ensure upload directory exists
     await fs.promises.mkdir(this.uploadDir, { recursive: true });
 
-    // Generate unique name to avoid naming collisions
-    const fileExt = path.extname(fileName);
-    const baseName = path.basename(fileName, fileExt);
-    const uniqueName = `${baseName}-${Date.now()}-${crypto.randomUUID()}${fileExt}`;
-    const fullPath = path.join(this.uploadDir, uniqueName);
+    const fileExt = path.extname(fileName).toLowerCase();
+    const rawBaseName = path
+      .basename(fileName, path.extname(fileName))
+      .toLowerCase()
+      .replace(/\s+/g, '_');
+
+    let uniqueName = `${rawBaseName}${fileExt}`;
+    let fullPath = path.join(this.uploadDir, uniqueName);
+    let counter = 1;
+
+    while (fs.existsSync(fullPath)) {
+      uniqueName = `${rawBaseName}_${counter}${fileExt}`;
+      fullPath = path.join(this.uploadDir, uniqueName);
+      counter++;
+    }
 
     await fs.promises.writeFile(fullPath, fileBuffer);
 

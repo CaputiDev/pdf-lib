@@ -1,9 +1,9 @@
 -- CreateTable
 CREATE TABLE "users" (
-    "id" TEXT NOT NULL,
-    "email" TEXT NOT NULL,
-    "password" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
+    "id" UUID NOT NULL,
+    "email" VARCHAR(255) NOT NULL,
+    "password" VARCHAR(255) NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -12,29 +12,31 @@ CREATE TABLE "users" (
 
 -- CreateTable
 CREATE TABLE "documents" (
-    "id" TEXT NOT NULL,
-    "title" TEXT NOT NULL,
-    "author" TEXT,
+    "id" UUID NOT NULL,
+    "title" VARCHAR(255) NOT NULL,
+    "author" VARCHAR(255),
     "sizeBytes" INTEGER NOT NULL,
-    "filePath" TEXT NOT NULL,
+    "filePath" VARCHAR(512) NOT NULL,
     "uploadedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "userId" TEXT NOT NULL,
+    "isPrivate" BOOLEAN NOT NULL DEFAULT false,
+    "encryptionKey" VARCHAR(255),
+    "userId" UUID NOT NULL,
 
     CONSTRAINT "documents_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "tags" (
-    "id" TEXT NOT NULL,
-    "name" TEXT NOT NULL,
+    "id" UUID NOT NULL,
+    "name" VARCHAR(100) NOT NULL,
 
     CONSTRAINT "tags_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "_DocumentToTag" (
-    "A" TEXT NOT NULL,
-    "B" TEXT NOT NULL,
+    "A" UUID NOT NULL,
+    "B" UUID NOT NULL,
 
     CONSTRAINT "_DocumentToTag_AB_pkey" PRIMARY KEY ("A","B")
 );

@@ -10,10 +10,10 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(uuid())
-  email     String     @unique
-  password  String
-  name      String
+  id        String     @id @default(uuid()) @db.Uuid
+  email     String     @unique @db.VarChar(255)
+  password  String     @db.VarChar(255)
+  name      String     @db.VarChar(255)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
   documents Document[]
@@ -22,27 +22,27 @@ model User {
 }
 
 model Document {
-  id         String   @id @default(uuid())
-  title      String
-  author     String?
-  sizeBytes  Int
-  filePath   String
-  uploadedAt DateTime @default(now())
+  id            String   @id @default(uuid()) @db.Uuid
+  title         String   @db.VarChar(255)
+  author        String?  @db.VarChar(255)
+  sizeBytes     Int
+  filePath      String   @db.VarChar(512)
+  uploadedAt    DateTime @default(now())
   
-  isPrivate  Boolean  @default(false)
-  encryptionKey String?
+  isPrivate     Boolean  @default(false)
+  encryptionKey String?  @db.VarChar(255)
   
-  userId     String
-  user       User     @relation(fields: [userId], references: [id])
+  userId        String   @db.Uuid
+  user          User     @relation(fields: [userId], references: [id])
   
-  tags       Tag[]
+  tags          Tag[]
 
   @@map("documents")
 }
 
 model Tag {
-  id        String     @id @default(uuid())
-  name      String     @unique
+  id        String     @id @default(uuid()) @db.Uuid
+  name      String     @unique @db.VarChar(100)
   documents Document[]
 
   @@map("tags")

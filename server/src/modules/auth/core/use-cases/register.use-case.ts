@@ -18,7 +18,9 @@ export class RegisterUseCase {
       throw new UserAlreadyExistsException(input.email);
     }
 
-    const hashedPassword = await bcrypt.hash(input.password, 10);
+    const saltEnv = process.env.BCRYPT_SALT || '10';
+    const salt = /^\d+$/.test(saltEnv) ? parseInt(saltEnv, 10) : saltEnv;
+    const hashedPassword = await bcrypt.hash(input.password, salt);
     const user = UserEntity.create({
       email: input.email,
       password: hashedPassword,
