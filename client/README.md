@@ -1,73 +1,60 @@
-# PDF Library Frontend
+# 🖥️ PDF Library — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Este é o **frontend** da aplicação **PDF Library**, uma interface web moderna de biblioteca para catalogação, upload e leitura de documentos PDF.
 
-Currently, two official plugins are available:
+O projeto é construído com foco em **Clean Architecture** (Arquitetura Limpa), buscando o máximo desacoplamento entre a interface de usuário (React), a lógica de negócio (Use Cases) e os detalhes de infraestrutura (como conexões HTTP e storage local).
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## 📖 Documentações Detalhadas
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Para mais detalhes sobre as entranhas do projeto e como contribuir, consulte os arquivos abaixo:
 
-## Expanding the ESLint configuration
+* 📐 **[Estrutura & Arquitetura (structure.md)](structure.md)**
+  * Detalhamento sobre a divisão em camadas (UI, Application, Domain, Infrastructure), regras de dependência enforçadas e design tokens.
+* 🤝 **[Guia de Contribuição (contributing.md)](contributing.md)**
+  * Instruções passo a passo sobre o fluxo de desenvolvimento, testes com Vitest, padrões de commits convencionais e regras de estilo.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🛠️ Stack Tecnológica
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+* **Framework:** React 19
+* **Build Tool:** Vite
+* **Linguagem:** TypeScript
+* **Roteamento:** React Router v7
+* **Estilo:** CSS Modules (Vanilla CSS)
+* **Gerenciamento de Estado:** Zustand (apenas para persistência de sessão de autenticação)
+* **Testes:** Vitest + Testing Library
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## 🚀 Como Iniciar Localmente
+
+### Pré-requisitos
+Certifique-se de que possui o **Node.js (v18+)** instalado.
+
+### 1. Instalar as dependências
+No diretório `client/`, execute:
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### 2. Rodar em ambiente de desenvolvimento
+Inicie o Vite:
+```bash
+npm run dev
+```
+A aplicação estará disponível em `http://localhost:5173` (ou na porta indicada no terminal).
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 3. Gerar a build de produção
+Para compilar e otimizar o projeto para produção:
+```bash
+npm run build
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### 4. Visualizar a build localmente
+Para servir a versão compilada localmente:
+```bash
+npm run preview
 ```
