@@ -65,3 +65,28 @@ npm run start:dev
 ```
 A API estará de pé em `http://localhost:3000`. Acesse a documentação interativa em:
 👉 **`http://localhost:3000/swagger`**
+
+---
+
+## 🧪 Como Testar
+
+A suíte de testes do backend utiliza **Jest** e valida as regras de negócio e integrações da API.
+
+### 1. Testes Unitários
+Valida o comportamento isolado dos Casos de Uso, Entidades e utilitários:
+```bash
+npm run test
+```
+
+### 2. Testes de Integração / E2E (Ponta a Ponta)
+Verifica as rotas HTTP e conexões com o banco de dados.
+> **Nota:** Certifique-se de que o container do banco PostgreSQL está ativo (`docker-compose up -d`) ao rodar os testes E2E.
+```bash
+npm run test:e2e
+```
+
+### 3. Cobertura de Código (Coverage)
+Para obter o relatório detalhado de cobertura de testes do sistema:
+```bash
+npm run test:cov
+```

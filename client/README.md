@@ -58,3 +58,21 @@ Para servir a versão compilada localmente:
 ```bash
 npm run preview
 ```
+
+---
+
+## 🧪 Como Testar
+
+Os testes do frontend são desenvolvidos utilizando **Vitest** e **React Testing Library** para testar os componentes de UI, hooks e casos de uso de forma isolada.
+
+### Executar os testes
+Para rodar toda a suíte de testes unitários:
+```bash
+npm run test
+```
+
+### Modo de desenvolvimento (Watch Mode)
+Para rodar os testes e assistir a alterações nos arquivos em tempo real:
+```bash
+npm run test:watch
+```
