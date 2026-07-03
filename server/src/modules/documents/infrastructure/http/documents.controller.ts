@@ -54,7 +54,7 @@ export class DocumentsController {
     private readonly listDocumentsUseCase: ListDocumentsUseCase,
     private readonly streamDocumentUseCase: StreamDocumentUseCase,
     private readonly updateDocumentUseCase: UpdateDocumentUseCase,
-  ) { }
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)

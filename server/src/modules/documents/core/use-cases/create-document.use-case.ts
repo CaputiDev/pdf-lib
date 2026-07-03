@@ -37,7 +37,9 @@ export class CreateDocumentUseCase {
       let autoKeywords: string[] = [];
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const parseFn = require('pdf-parse') as (buf: Buffer) => Promise<{ text: string }>;
+        const parseFn = require('pdf-parse') as (
+          buf: Buffer,
+        ) => Promise<{ text: string }>;
         const parsed = await parseFn(input.fileBuffer);
         autoKeywords = extractKeywords(parsed.text);
       } catch {
@@ -61,7 +63,9 @@ export class CreateDocumentUseCase {
       );
 
       // 3. Merge manual tags with auto-generated keywords (deduplicate by name)
-      const manualTagNames = (input.tags ?? []).map((t) => t.trim().toLowerCase());
+      const manualTagNames = (input.tags ?? []).map((t) =>
+        t.trim().toLowerCase(),
+      );
       const allTagNames = [
         ...manualTagNames,
         ...autoKeywords.filter((kw) => !manualTagNames.includes(kw)),

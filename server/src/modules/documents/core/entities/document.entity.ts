@@ -59,7 +59,9 @@ export class DocumentEntity {
     }
 
     if (properties.sizeBytes <= 0) {
-      throw new InvalidDocumentException('File size must be greater than zero bytes.');
+      throw new InvalidDocumentException(
+        'File size must be greater than zero bytes.',
+      );
     }
 
     if (!properties.userId || properties.userId.trim() === '') {

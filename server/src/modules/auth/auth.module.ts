@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './infrastructure/http/auth.controller';
-import { PrismaUserRepository } from '../users/infrastructure/database/prisma-user.repository';
+import { IUserRepository } from '../users/core/interfaces/user.repository.interface';
 import { RegisterUseCase } from './core/use-cases/register.use-case';
 import { LoginUseCase } from './core/use-cases/login.use-case';
 import { JwtAuthGuard } from './infrastructure/http/guards/jwt-auth.guard';
@@ -23,17 +23,17 @@ import { OptionalJwtAuthGuard } from './infrastructure/http/guards/optional-jwt-
     OptionalJwtAuthGuard,
     {
       provide: RegisterUseCase,
-      useFactory: (userRepo: PrismaUserRepository) => {
+      useFactory: (userRepo: IUserRepository) => {
         return new RegisterUseCase(userRepo);
       },
-      inject: [PrismaUserRepository],
+      inject: ['IUserRepository'],
     },
     {
       provide: LoginUseCase,
-      useFactory: (userRepo: PrismaUserRepository) => {
+      useFactory: (userRepo: IUserRepository) => {
         return new LoginUseCase(userRepo);
       },
-      inject: [PrismaUserRepository],
+      inject: ['IUserRepository'],
     },
   ],
   exports: [JwtAuthGuard, OptionalJwtAuthGuard, RegisterUseCase, LoginUseCase],

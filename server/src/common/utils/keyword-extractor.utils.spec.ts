@@ -44,8 +44,20 @@ describe('extractKeywords', () => {
 
   it('should never return more than 10 keywords regardless of input size', () => {
     // Use pure-letter words (no digits) so they are not filtered out
-    const words = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot',
-                   'golf', 'hotel', 'india', 'juliet', 'kilo', 'lima'];
+    const words = [
+      'alpha',
+      'bravo',
+      'charlie',
+      'delta',
+      'echo',
+      'foxtrot',
+      'golf',
+      'hotel',
+      'india',
+      'juliet',
+      'kilo',
+      'lima',
+    ];
     const repeatedText = words.join(' ').repeat(5);
     const result = extractKeywords(repeatedText);
     expect(result.length).toBeLessThanOrEqual(10);
@@ -92,7 +104,8 @@ describe('extractKeywords', () => {
   });
 
   it('should discard purely numeric tokens', () => {
-    const text = 'algorithm 2024 calculates 404 results 100 times faster performance';
+    const text =
+      'algorithm 2024 calculates 404 results 100 times faster performance';
     const result = extractKeywords(text);
     result.forEach((kw) => expect(kw).toMatch(/^\p{L}+$/u));
     expect(result).toContain('algorithm');
@@ -106,7 +119,8 @@ describe('extractKeywords', () => {
   });
 
   it('should discard mixed alphanumeric tokens (e.g. h2o, mp3, iso9001)', () => {
-    const text = 'documentation h2o mp3 format iso9001 standard version compliance';
+    const text =
+      'documentation h2o mp3 format iso9001 standard version compliance';
     const result = extractKeywords(text);
     result.forEach((kw) => expect(kw).toMatch(/^\p{L}+$/u));
     expect(result).toContain('documentation');
@@ -122,9 +136,21 @@ describe('extractKeywords', () => {
   // ----------------------------------------------------------------
 
   it('should exclude common Portuguese stop words', () => {
-    const text = 'para que com uma nos das dos por mais isso inteligencia artificial';
+    const text =
+      'para que com uma nos das dos por mais isso inteligencia artificial';
     const result = extractKeywords(text);
-    const ptStopWords = ['para', 'que', 'com', 'uma', 'nos', 'das', 'dos', 'por', 'mais', 'isso'];
+    const ptStopWords = [
+      'para',
+      'que',
+      'com',
+      'uma',
+      'nos',
+      'das',
+      'dos',
+      'por',
+      'mais',
+      'isso',
+    ];
     ptStopWords.forEach((sw) => expect(result).not.toContain(sw));
     expect(result).toContain('inteligencia');
     expect(result).toContain('artificial');
@@ -135,9 +161,23 @@ describe('extractKeywords', () => {
   // ----------------------------------------------------------------
 
   it('should exclude common English stop words', () => {
-    const text = 'the and for are but not with from have this that they machine learning';
+    const text =
+      'the and for are but not with from have this that they machine learning';
     const result = extractKeywords(text);
-    const enStopWords = ['the', 'and', 'for', 'are', 'but', 'not', 'with', 'from', 'have', 'this', 'that', 'they'];
+    const enStopWords = [
+      'the',
+      'and',
+      'for',
+      'are',
+      'but',
+      'not',
+      'with',
+      'from',
+      'have',
+      'this',
+      'that',
+      'they',
+    ];
     enStopWords.forEach((sw) => expect(result).not.toContain(sw));
     expect(result).toContain('machine');
     expect(result).toContain('learning');

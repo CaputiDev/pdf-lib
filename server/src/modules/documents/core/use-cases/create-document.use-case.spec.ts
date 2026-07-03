@@ -25,7 +25,7 @@ jest.mock('pdf-parse', () =>
 );
 
 // Get a typed reference to the mocked function for per-test overrides
-const pdfParseMock = jest.requireMock('pdf-parse') as jest.Mock;
+const pdfParseMock = jest.requireMock('pdf-parse');
 
 describe('CreateDocumentUseCase', () => {
   let useCase: CreateDocumentUseCase;
