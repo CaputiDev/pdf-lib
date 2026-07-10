@@ -122,4 +122,22 @@ describe('E - Errors (Tratamento de Erros e Status Codes)', () => {
 
     expect(res.body.message[0]).toContain('Email address is already in use.');
   });
+
+  it('400 Bad Request: deve falhar ao enviar arquivo que não é PDF no upload', async () => {
+    const res = await request(app.getHttpServer())
+      .post('/documents')
+      .set('Authorization', `Bearer ${token}`)
+      .attach('file', Buffer.from('plain text content'), 'sample.txt')
+      .field('title', 'Text Document')
+      .expect(400);
+
+    expect(res.body.message[0]).toContain('Only PDF files are allowed.');
+  });
+
+  it('400 Bad Request: deve falhar ao tentar registrar com e-mail inválido', async () => {
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email: 'invalid-email', password: 'password123', name: 'Bad User' })
+      .expect(400);
+  });
 });

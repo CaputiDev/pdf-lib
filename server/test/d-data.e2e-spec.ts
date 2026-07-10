@@ -99,4 +99,64 @@ describe('D - Data (Dados e Validações)', () => {
 
     expect(streamRes.body.toString()).toBe(fileContent);
   });
+
+  it('deve realizar busca e filtros por query (search, tag, username) corretivos', async () => {
+    // 1. Upload de documento com título, autor e tag específicos
+    await request(app.getHttpServer())
+      .post('/documents')
+      .set('Authorization', `Bearer ${token}`)
+      .attach('file', Buffer.from('%PDF-1.4 ...'), 'specific.pdf')
+      .field('title', 'Special Alpha Document')
+      .field('author', 'Unique Author Name')
+      .field('tags', 'alpha,test')
+      .expect(201);
+
+    // 2. Filtrar por termo de busca no título (search)
+    const searchRes = await request(app.getHttpServer())
+      .get('/documents?search=Alpha')
+      .expect(200);
+    expect(searchRes.body.documents.length).toBe(1);
+    expect(searchRes.body.documents[0].title).toBe('Special Alpha Document');
+
+    // 3. Filtrar por tag (tag)
+    const tagRes = await request(app.getHttpServer())
+      .get('/documents?tag=alpha')
+      .expect(200);
+    expect(tagRes.body.documents.length).toBe(1);
+    expect(tagRes.body.documents[0].tags).toContain('alpha');
+
+    // 4. Filtrar por username (username do uploader: "Data User")
+    const usernameRes = await request(app.getHttpServer())
+      .get('/documents?username=Data')
+      .expect(200);
+    expect(usernameRes.body.documents.length).toBe(1);
+  });
+
+  it('deve validar limites e paginação corretos', async () => {
+    // 1. Enviar 2 documentos
+    await request(app.getHttpServer())
+      .post('/documents')
+      .set('Authorization', `Bearer ${token}`)
+      .attach('file', Buffer.from('%PDF-1.4 ...'), 'doc1.pdf')
+      .field('title', 'Document One')
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post('/documents')
+      .set('Authorization', `Bearer ${token}`)
+      .attach('file', Buffer.from('%PDF-1.4 ...'), 'doc2.pdf')
+      .field('title', 'Document Two')
+      .expect(201);
+
+    // 2. Buscar com limite = 1
+    const paginatedRes = await request(app.getHttpServer())
+      .get('/documents?limit=1&page=1')
+      .expect(200);
+
+    expect(paginatedRes.body.documents.length).toBe(1);
+    expect(paginatedRes.body.total).toBe(2);
+    expect(paginatedRes.body.pages).toBe(2);
+    expect(paginatedRes.body.page).toBe(1);
+    expect(paginatedRes.body.limit).toBe(1);
+  });
 });
