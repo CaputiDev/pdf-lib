@@ -7,6 +7,8 @@ import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { GlobalExceptionFilter } from '../src/common/filters/global-exception.filter';
 import { PrismaService } from '../src/config/prisma/prisma.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 describe('D - Data (Dados e Validações)', () => {
   let app: INestApplication<App>;
@@ -47,6 +49,13 @@ describe('D - Data (Dados e Validações)', () => {
     await prisma.tag.deleteMany();
     await prisma.user.deleteMany();
     await app.close();
+  });
+
+  afterAll(async () => {
+    const testUploadsDir = path.resolve(process.cwd(), 'uploads-test');
+    if (fs.existsSync(testUploadsDir)) {
+      await fs.promises.rm(testUploadsDir, { recursive: true, force: true });
+    }
   });
 
   it('deve permitir upload de documento com tags passadas como string vazia', async () => {

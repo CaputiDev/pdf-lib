@@ -7,6 +7,8 @@ import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { GlobalExceptionFilter } from '../src/common/filters/global-exception.filter';
 import { PrismaService } from '../src/config/prisma/prisma.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 describe('V - Verbs (Métodos HTTP)', () => {
   let app: INestApplication<App>;
@@ -35,6 +37,13 @@ describe('V - Verbs (Métodos HTTP)', () => {
     await prisma.tag.deleteMany();
     await prisma.user.deleteMany();
     await app.close();
+  });
+
+  afterAll(async () => {
+    const testUploadsDir = path.resolve(process.cwd(), 'uploads-test');
+    if (fs.existsSync(testUploadsDir)) {
+      await fs.promises.rm(testUploadsDir, { recursive: true, force: true });
+    }
   });
 
   it('GET / -> deve redirecionar para o Swagger', () => {
